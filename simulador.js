@@ -1,10 +1,30 @@
 
 // Criacao de array tipado em javascript, estao sendo alocados 128 bytes para corresponder os 32 registradores de 32 bits
-const registers = new Int32Array(new ArrayBuffer(32 * 4));
-let $pc = 0; 
+const registers = new Int32Array(new ArrayBuffer(128));
+let $pc = 0;
 
-// A memoria precisa ter 512 bytes;
+// A memoria precisa ter 512 bytes, cria um vetor de 128 inteiros;
 const memory = new Int32Array(new ArrayBuffer(512));
+
+function loadFromTextArea() {
+    // Pega conteudo do text area, separa por quebra de linha e guarda num array
+    const text = document.getElementById("text-input").value.split('\n');
+
+    let i = 0;
+    for (let instruction of text) {
+        // Desconsidera instrucoes com tamanho invalido
+        if (instruction.length < 4) {
+            continue;
+        }
+
+        // passa a instrucao para inteiro levando em consideracao que esta escrita na base 2
+        memory[i] = parseInt(instruction, 2);
+        i++;
+    }
+}
+loadFromTextArea();
+
+
 
 /*
 Operadores bitwise (https://www.w3schools.com/js/js_bitwise.asp)
