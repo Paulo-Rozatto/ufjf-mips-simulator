@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mips Simulator</title>
+
+    <style>
+        html,
+        body {
+            margin: 0 auto;
+            overflow-x: hidden;
+        }
+
+        .container {
+            /* display: block; */
+            width: 100vw;
+            padding: 1rem;
+            background-color: beige;
+        }
+
+        .center {
+            /* display: block; */
+            margin: auto;
+            width: fit-content;
+        }
+
+        .col {
+            display: inline-block;
+        }
+
+        .row {
+            display: block;
+            width: 100%;
+        }
+
+        .register-name {
+            width: 20%;
+            min-width: fit-content;
+            padding: 1% 0% 1% 3%;
+            border: 1px solid black;
+            overflow-x: auto;
+        }
+
+        .register-value {
+            width: 70%;
+            min-width: fit-content;
+            padding: 1% 0% 1% 3%;
+            border: 1px solid black;
+            overflow-x: auto;
+            /* margin-bottom: 1%; */
+        }
+    </style>
+</head>
+
+<body>
+    <div id="input-area" class="container">
+        <h3>Carregar Arquivo</h3>
+        <label for="file-input">Escolha o arquivo binario: </label>
+        <input id="file-input" type="file">
+
+
+
+        <br><br>
+
+        <label for="text-input">Ou insira o codigo aqui:</label>
+        <textarea name="Entrada" id="text-input" cols="30" rows="10"
+            placeholder="Entrada alternativa do codigo binario..." style="display: block;"></textarea>
+
+    </div>
+    <hr>
+
+    <div class="container">
+        <div style="width: 27.5%; background-color: aliceblue;" class="col">
+
+            <div class="row">
+                <h3 class="center">Registradores</h3>
+            </div>
+
+            <div class="row" style="padding-top: 1%;">
+
+                <hr>
+                <span class="col register-name">$pc</span>
+                <span id="pc" class="col register-value">00000000000000000000000000000000</span>
+                <hr>
+
+                <span class="col register-name">$zero</span>
+                <span class="col register-value">00000000000000000000000000000000</span>
+
+                <span class="col register-name">$at</span>
+                <span id="at" class="col register-value">Reservado para o assembler</span>
+
+                <span class="col register-name">$v0</span>
+                <span id="v0" class="col register-value">00000000000000000000000000000000</span>
+
+                <span class="col register-name">$v1</span>
+                <span id="v1" class="col register-value">00000000000000000000000000000000</span>
+
+                <span class="col register-name">$a0</span>
+                <span id="a0" class="col register-value">00000000000000000000000000000000</span>
+
+                <span class="col register-name">$a1</span>
+                <span id="a1" class="col register-value">00000000000000000000000000000000</span>
+
+                <span class="col register-name">$a2</span>
+                <span id="a2" class="col register-value">00000000000000000000000000000000</span>
+
+                <span class="col register-name">$a3</span>
+                <span id="a3" class="col register-value">00000000000000000000000000000000</span>
+
+                <span class="col register-name">$t0</span>
+                <span id="t0" class="col register-value">00000000000000000000000000000000</span>
+
+                <span class="col register-name">$t1</span>
+                <span id="t1" class="col register-value">00000000000000000000000000000000</span>
+
+                <span class="col register-name">$t2</span>
+                <span id="t2" class="col register-value">00000000000000000000000000000000</span>
+
+                <span class="col register-name">$t3</span>
+                <span id="t3" class="col register-value">00000000000000000000000000000000</span>
+
+                <span class="col register-name">$t4</span>
+                <span id="t4" class="col register-value">00000000000000000000000000000000</span>
+
+                <span class="col register-name">$t5</span>
+                <span id="t5" class="col register-value">00000000000000000000000000000000</span>
+
+                <span class="col register-name">$t6</span>
+                <span id="t6" class="col register-value">00000000000000000000000000000000</span>
+
+                <span class="col register-name">$t7</span>
+                <span id="t7" class="col register-value">00000000000000000000000000000000</span>
+
+                <span class="col register-name">$r0</span>
+                <span id="r0" class="col register-value">00000000000000000000000000000000</span>
+
+                <span class="col register-name">$r1</span>
+                <span id="r1" class="col register-value">00000000000000000000000000000000</span>
+
+                <span class="col register-name">$r2</span>
+                <span id="r2" class="col register-value">00000000000000000000000000000000</span>
+
+                <span class="col register-name">$r3</span>
+                <span id="r3" class="col register-value">00000000000000000000000000000000</span>
+
+                <span class="col register-name">$r4</span>
+                <span id="r4" class="col register-value">00000000000000000000000000000000</span>
+
+                <span class="col register-name">$r5</span>
+                <span id="r5" class="col register-value">00000000000000000000000000000000</span>
+
+                <span class="col register-name">$r6</span>
+                <span id="r6" class="col register-value">00000000000000000000000000000000</span>
+
+                <span class="col register-name">$r7</span>
+                <span id="r7" class="col register-value">00000000000000000000000000000000</span>
+
+                <span class="col register-name">$t8</span>
+                <span id="t8" class="col register-value">00000000000000000000000000000000</span>
+
+                <span class="col register-name">$t9</span>
+                <span id="t9" class="col register-value">00000000000000000000000000000000</span>
+
+                <span class="col register-name">$k0</span>
+                <span id="k0" class="col register-value">Reservado pelo Sisema Operacional</span>
+
+                <span class="col register-name">$k1</span>
+                <span id="k1" class="col register-value">Reservado pelo Sisema Operacional</span>
+
+                <span class="col register-name">$gp</span>
+                <span id="gp" class="col register-value">00000000000000000000000000000000</span>
+
+                <span class="col register-name">$sp</span>
+                <span id="sp" class="col register-value">00000000000000000000000000000000</span>
+
+                <span class="col register-name">$fp</span>
+                <span id="fp" class="col register-value">00000000000000000000000000000000</span>
+
+                <span class="col register-name">$ra</span>
+                <span id="ra" class="col register-value">00000000000000000000000000000000</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="simulador.js"></script>
+
+    <script>
+        // Nao permite digitar nada alem de 0 e 1 na caixa de texto
+        document.getElementById("text-input").addEventListener('keydown', (e) => {
+            if(e.key != '0' && e.key != '1' && e.key !='Enter' && e.key != 'Backspace') {
+                e.preventDefault();
+            }
+        }, false);
+    </script>
+</body>
+
+</html>
