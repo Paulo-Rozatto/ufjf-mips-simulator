@@ -1,7 +1,10 @@
 
 // Criacao de array tipado em javascript, estao sendo alocados 128 bytes para corresponder os 32 registradores de 32 bits
 const registers = new Int32Array(new ArrayBuffer(128));
-let $pc = 0;
+
+//operacoes bitwise em javascript convertem numeros para inteiros de 32 bits,
+//por isso esta sendo usado o OR aqui e em outras partes do codigo
+let pc = 0 | 0;
 
 // A memoria de instrucoes
 const instruction_memory = [];
@@ -24,24 +27,38 @@ function loadFromTextArea() {
 
     for (let instruction of text) {
         // Desconsidera instrucoes com tamanho invalido
-        if (instruction.length < 4) {
+        if (instruction.length < 32) {
             continue;
         }
 
         // passa a instrucao para inteiro levando em consideracao que esta escrita na base 2
-        instruction_memory.push(parseInt(instruction, 2));
+        instruction_memory.push(parseInt(instruction, 2) | 0); 
     }
+
+    // console.log('Instruction memory: ')
+    // for(let i of instruction_memory) {
+    //     console.log(i);
+    // }
 }
 loadFromTextArea();
 
 function cycle() {
-
+    instruction_fetch();
 }
-
+cycle();
 
 // todo: trocar nome das funcoes
 function instruction_fetch() { // Busca instrucao
+    console.log('IF')
+    console.log(`pc: ${pc}, inst: ${instruction_memory[pc]}`)
 
+    if_id[0] = instruction_memory[pc / 4]; // o array aloca 1 byte em cada posicao e o pc esta em bytes
+    pc += 4;
+    if_id[1] = pc;
+
+    htmlWrite('pc', pc);
+
+    console.log(if_id);
 }
 
 function instruction_decode() { // Decodifica instrucoes
@@ -58,6 +75,19 @@ function memory_read() { // acesso a memoria
 
 function write_back() { // escrita do resultado
 
+}
+
+function htmlWrite(id, value) {
+    // - Na hora de mostrar os numeros negativos, o javascript usa sinal, 
+    //   por exemplo, o -2 e mostrado como -10 ao inves de 11111111111111111111111111111110
+    //   Usar o deslocamento para direita >>> com 0 deslocamentos corrige a exibicao
+    
+    // - O parametro 2 no toString se refere a base numerica
+
+    // - O pad start preenche a string com o caractere informado ate que ela tenha o tamanho do informado
+    //   So sera preciso o padStart em numeros positivos, entao pode-se preencher com zeros apenas
+
+    document.getElementById(id).innerHTML = (value >>> 0).toString(2).padStart(32, '0');
 }
 
 
