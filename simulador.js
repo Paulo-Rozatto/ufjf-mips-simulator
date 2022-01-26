@@ -3,14 +3,25 @@
 const registers = new Int32Array(new ArrayBuffer(128));
 let $pc = 0;
 
-// A memoria precisa ter 512 bytes, cria um vetor de 128 inteiros;
-const memory = new Int32Array(new ArrayBuffer(512));
+// A memoria de instrucoes
+const instruction_memory = [];
+
+// A memoria de dados precisa ter 512 bytes, cria um vetor de 128 inteiros;
+const data_memory = new Int32Array(new ArrayBuffer(512));
+
+// Registradores do pipeline
+const if_id = new Int32Array(new ArrayBuffer(8)); // 64 bits ou 32 bytes
+const id_ex = new Int32Array(new ArrayBuffer(16)); // 128 bits ou 16 bytes
+const ex_mem = new Int32Array(new ArrayBuffer(12)); // 104 bits ou 13 bytes (precisa de apenas 97 bits, porem a alocacao precisa ser feita em bytes)
+const mem_wb = new Int32Array(new ArrayBuffer(8)); // 64 bits ou 32 bytes
+
+// Controle
+const control = {};
 
 function loadFromTextArea() {
     // Pega conteudo do text area, separa por quebra de linha e guarda num array
     const text = document.getElementById("text-input").value.split('\n');
 
-    let i = 0;
     for (let instruction of text) {
         // Desconsidera instrucoes com tamanho invalido
         if (instruction.length < 4) {
@@ -18,11 +29,36 @@ function loadFromTextArea() {
         }
 
         // passa a instrucao para inteiro levando em consideracao que esta escrita na base 2
-        memory[i] = parseInt(instruction, 2);
-        i++;
+        instruction_memory.push(parseInt(instruction, 2));
     }
 }
 loadFromTextArea();
+
+function cycle() {
+
+}
+
+
+// todo: trocar nome das funcoes
+function instruction_fetch() { // Busca instrucao
+
+}
+
+function instruction_decode() { // Decodifica instrucoes
+
+}
+
+function execute() { // execucao ou calculo de endereco
+
+}
+
+function memory_read() { // acesso a memoria
+
+}
+
+function write_back() { // escrita do resultado
+
+}
 
 
 
