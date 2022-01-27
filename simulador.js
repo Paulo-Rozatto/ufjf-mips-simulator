@@ -1,4 +1,6 @@
 
+import Control from "./controls.js";
+
 // Criacao de array tipado em javascript, estao sendo alocados 128 bytes para corresponder os 32 registradores de 32 bits
 const registers = new Int32Array(new ArrayBuffer(128));
 
@@ -18,8 +20,7 @@ const id_ex = new Int32Array(new ArrayBuffer(16)); // 128 bits ou 16 bytes
 const ex_mem = new Int32Array(new ArrayBuffer(12)); // 104 bits ou 13 bytes (precisa de apenas 97 bits, porem a alocacao precisa ser feita em bytes)
 const mem_wb = new Int32Array(new ArrayBuffer(8)); // 64 bits ou 32 bytes
 
-// Controle
-const control = {};
+const control = new Control();
 
 function loadFromTextArea() {
     // Pega conteudo do text area, separa por quebra de linha e guarda num array
@@ -32,7 +33,7 @@ function loadFromTextArea() {
         }
 
         // passa a instrucao para inteiro levando em consideracao que esta escrita na base 2
-        instruction_memory.push(parseInt(instruction, 2) | 0); 
+        instruction_memory.push(parseInt(instruction, 2) | 0);
     }
 
     // console.log('Instruction memory: ')
@@ -44,13 +45,14 @@ loadFromTextArea();
 
 function cycle() {
     instruction_fetch();
+    instruction_decode();
 }
 cycle();
 
 // todo: trocar nome das funcoes
 function instruction_fetch() { // Busca instrucao
-    console.log('IF')
-    console.log(`pc: ${pc}, inst: ${instruction_memory[pc]}`)
+    // console.log('IF')
+    // console.log(`pc: ${pc}, inst: ${instruction_memory[pc]}`)
 
     if_id[0] = instruction_memory[pc / 4]; // o array aloca 1 byte em cada posicao e o pc esta em bytes
     pc += 4;
@@ -58,12 +60,24 @@ function instruction_fetch() { // Busca instrucao
 
     htmlWrite('pc', pc);
 
-    console.log(if_id);
+    // console.log(if_id);
 }
 
 function instruction_decode() { // Decodifica instrucoes
+    control.set(if_id[0]);
 
+    let rs = (if_id[0] >>> 22) & 0b00000000000000000000000000001111; // [25-21]
+    let rt = (if_id[0] >>> 18) & 0b00000000000000000000000000001111; // [20-16]
+    let rd = (if_id[0] >>> 14) & 0b00000000000000000000000000001111; // [15-11]
+
+    let imediate = if_id[0] & 0b00000000000000001111111111111111; // [15 - 0]
+
+    // extender o sinal: zero fill para a esquerda e depois  sigend shift para a direita
+    imediate = (imediate << 16) >> 16;
+
+    console.log(rs, rt, rd);
 }
+
 
 function execute() { // execucao ou calculo de endereco
 
@@ -81,7 +95,7 @@ function htmlWrite(id, value) {
     // - Na hora de mostrar os numeros negativos, o javascript usa sinal, 
     //   por exemplo, o -2 e mostrado como -10 ao inves de 11111111111111111111111111111110
     //   Usar o deslocamento para direita >>> com 0 deslocamentos corrige a exibicao
-    
+
     // - O parametro 2 no toString se refere a base numerica
 
     // - O pad start preenche a string com o caractere informado ate que ela tenha o tamanho do informado
@@ -92,17 +106,14 @@ function htmlWrite(id, value) {
 
 
 
-/*
-Operadores bitwise (https://www.w3schools.com/js/js_bitwise.asp)
-
-Operator Name                   Description
-&	    AND	                    Sets each bit to 1 if both bits are 1
-|	    OR	                    Sets each bit to 1 if one of two bits is 1
-^	    XOR	                    Sets each bit to 1 if only one of two bits is 1
-~	    NOT	                    Inverts all the bits
-<<	    Zero fill left shift    Shifts left by pushing zeros in from the right and let the leftmost bits fall off
->>	    Signed right shift	    Shifts right by pushing copies of the leftmost bit in from the left, and let the rightmost bits fall off
->>>	    Zero fill right shift	Shifts right by pushing zeros in from the left, and let the rightmost bits fall off
+/**
+ * Operadores bitwise (https://www.w3schools.com/js/js_bitwise.asp)
+ * Operator Name                   Description
+ * &	    AND	                    Sets each bit to 1 if both bits are 1
+ * |	    OR	                    Sets each bit to 1 if one of two bits is 1
+ * ^	    XOR	                    Sets each bit to 1 if only one of two bits is 1
+ * ~	    NOT	                    Inverts all the bits
+ * <<	    Zero fill left shift    Shifts left by pushing zeros in from the right and let the leftmost bits fall off
+ * >>	    Signed right shift	    Shifts right by pushing copies of the leftmost bit in from the left, and let the rightmost bits fall off
+ * >>>	    Zero fill right shift	Shifts right by pushing zeros in from the left, and let the rightmost bits fall off
 */
-// console.log((10).toString(2), parseInt('1010', 2));
-
