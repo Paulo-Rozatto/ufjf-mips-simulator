@@ -14,7 +14,7 @@ export default class Control {
     set(instruction) {
         // pega os 6 primeiros bits da instrucao
         let opcode = instruction >>> 26;
-        console.log(opcode.toString(2))
+        // console.log(opcode.toString(2))
 
         switch (opcode) {
             case 0: {

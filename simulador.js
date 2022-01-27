@@ -1,5 +1,6 @@
 
 import Control from "./controls.js";
+import ALU from "./alu.js";
 
 // Criacao de array tipado em javascript, estao sendo alocados 128 bytes para corresponder os 32 registradores de 32 bits
 const registers = new Int32Array(new ArrayBuffer(128));
@@ -21,6 +22,7 @@ const ex_mem = new Int32Array(new ArrayBuffer(12)); // 104 bits ou 13 bytes (pre
 const mem_wb = new Int32Array(new ArrayBuffer(8)); // 64 bits ou 32 bytes
 
 const control = new Control();
+const alu = new ALU();
 
 function loadFromTextArea() {
     // Pega conteudo do text area, separa por quebra de linha e guarda num array
@@ -46,6 +48,9 @@ loadFromTextArea();
 function cycle() {
     instruction_fetch();
     instruction_decode();
+    execute();
+    memory_read();
+    write_back();
 }
 cycle();
 
@@ -66,29 +71,77 @@ function instruction_fetch() { // Busca instrucao
 function instruction_decode() { // Decodifica instrucoes
     control.set(if_id[0]);
 
-    let rs = (if_id[0] >>> 22) & 0b00000000000000000000000000001111; // [25-21]
-    let rt = (if_id[0] >>> 18) & 0b00000000000000000000000000001111; // [20-16]
-    let rd = (if_id[0] >>> 14) & 0b00000000000000000000000000001111; // [15-11]
-
+    let rs = (if_id[0] >>> 21) & 0b00000000000000000000000000011111; // [25-21]
+    let rt = (if_id[0] >>> 15) & 0b00000000000000000000000000011111; // [20-16]
     let imediate = if_id[0] & 0b00000000000000001111111111111111; // [15 - 0]
 
     // extender o sinal: zero fill para a esquerda e depois  sigend shift para a direita
     imediate = (imediate << 16) >> 16;
 
-    console.log(rs, rt, rd);
-}
+    id_ex[0] = registers[rs];
+    id_ex[1] = registers[rt]
+    id_ex[2] = imediate;
+    id_ex[3] = if_id[1]; // salva PC + 4
 
+    // console.log(rs, rt);
+    // console.log(id_ex);
+}
 
 function execute() { // execucao ou calculo de endereco
 
+    let result = alu.execute(0b10, id_ex[0], id_ex[2]) // rs + imediate
+
+    ex_mem[0] = result;
+
+    console.log(result);
 }
 
 function memory_read() { // acesso a memoria
+    data_memory[1] = 0b00000000000000000000000010000010
+
+    // data_memory guarda words, entao precisa dividir o endereco por 4
+    let address = Math.floor(ex_mem[0] / 4);
+
+    console.log('memory read')
+    console.log(address, data_memory[address])
+
+    mem_wb[0] = data_memory[address];
 
 }
 
 function write_back() { // escrita do resultado
+    let rt = (if_id[0] >>> 15) & 0b00000000000000000000000000011111; // [20-16]
 
+    registers[rt] = mem_wb[0];
+
+    console.log('write back')
+    console.log(rt.toString(2), registers[rt])
+
+    updateUI();
+}
+
+function updateUI() {
+    htmlWrite('v0', registers[2]);
+    htmlWrite('v1', registers[3]);
+
+    for (let i = 0; i < 4; i++) {
+        htmlWrite('a' + i, registers[4 + i]);
+    }
+
+    for (let i = 0; i < 8; i++) {
+        htmlWrite('t' + i, registers[8 + i]);
+    }
+    htmlWrite('t8', registers[24]);
+    htmlWrite('t9', registers[25]);
+
+    for (let i = 0; i < 8; i++) {
+        htmlWrite('r' + i, registers[15 + i]);
+    }
+
+    htmlWrite('gp', registers[28]);
+    htmlWrite('sp', registers[29]);
+    htmlWrite('fp', registers[20]);
+    htmlWrite('ra', registers[31]);
 }
 
 function htmlWrite(id, value) {
