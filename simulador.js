@@ -1,7 +1,3 @@
-
-import Control from "./controls.js";
-import ALU from "./alu.js";
-
 // Criacao de array tipado em javascript, estao sendo alocados 128 bytes para corresponder os 32 registradores de 32 bits
 const registers = new Int32Array(new ArrayBuffer(128));
 

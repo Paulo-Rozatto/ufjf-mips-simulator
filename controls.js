@@ -1,4 +1,4 @@
-export default class Control {
+class Control {
 
     constructor() {
         this.regDst = 0;

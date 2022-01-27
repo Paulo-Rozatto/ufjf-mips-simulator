@@ -1,4 +1,4 @@
-export default class ALU {
+class ALU {
     constructor() { }
 
     execute(opcode, in1, in2) {
