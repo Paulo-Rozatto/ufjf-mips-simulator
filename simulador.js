@@ -13,8 +13,8 @@ const data_memory = new Int32Array(new ArrayBuffer(512));
 
 // Registradores do pipeline
 const if_id = new Int32Array(new ArrayBuffer(8)); // 64 bits ou 32 bytes
-const id_ex = new Int32Array(new ArrayBuffer(16)); // 128 bits ou 16 bytes
-const ex_mem = new Int32Array(new ArrayBuffer(12)); // 104 bits ou 13 bytes (precisa de apenas 97 bits, porem a alocacao precisa ser feita em bytes)
+const id_ex = new Int32Array(new ArrayBuffer(20)); // 160 bits ou 17 bytes - se nao precisasse alocar em multiplos de 4 bytes seriam nescessarios apenas 133 bits
+const ex_mem = new Int32Array(new ArrayBuffer(16)); // 128 bits ou 16 bytes - (precisa de apenas 97 bits)
 const mem_wb = new Int32Array(new ArrayBuffer(8)); // 64 bits ou 32 bytes
 
 const control = new Control();
@@ -65,8 +65,6 @@ function instruction_fetch() { // Busca instrucao
 }
 
 function instruction_decode() { // Decodifica instrucoes
-    control.set(if_id[0]);
-
     let rs = (if_id[0] >>> 21) & 0b00000000000000000000000000011111; // [25-21]
     let rt = (if_id[0] >>> 15) & 0b00000000000000000000000000011111; // [20-16]
     let imediate = if_id[0] & 0b00000000000000001111111111111111; // [15 - 0]
@@ -78,7 +76,10 @@ function instruction_decode() { // Decodifica instrucoes
     id_ex[1] = registers[rt]
     id_ex[2] = imediate;
     id_ex[3] = if_id[1]; // salva PC + 4
+    id_ex[4] = rt // salva endereco para escrever load word
 
+
+    control.set(if_id[0]);
     // console.log(rs, rt);
     // console.log(id_ex);
 }
@@ -88,6 +89,7 @@ function execute() { // execucao ou calculo de endereco
     let result = alu.execute(0b10, id_ex[0], id_ex[2]) // rs + imediate
 
     ex_mem[0] = result;
+    ex_mem[3] = id_ex[4]; // endereco registrador de escrita load word
 
     console.log(result);
 }
@@ -102,16 +104,16 @@ function memory_read() { // acesso a memoria
     console.log(address, data_memory[address])
 
     mem_wb[0] = data_memory[address];
+    mem_wb[1] = ex_mem[3];
 
 }
 
 function write_back() { // escrita do resultado
-    let rt = (if_id[0] >>> 15) & 0b00000000000000000000000000011111; // [20-16]
-
-    registers[rt] = mem_wb[0];
+    registers[mem_wb[1]] = mem_wb[0]; // escreve no registrador guardade em mem_wb[1] o valor lido da memoria guardado em mem_wb[0]
 
     console.log('write back')
-    console.log(rt.toString(2), registers[rt])
+    console.log(mem_wb[1].toString(2), registers[mem_wb[1]])
+
 
     updateUI();
 }
