@@ -64,8 +64,9 @@
         <br><br>
 
         <label for="text-input">Ou insira o codigo aqui:</label>
-        <textarea name="Entrada" id="text-input" cols="30" rows="10"
-            placeholder="Entrada alternativa do codigo binario..." style="display: block;">00010010101011001100000000000011
+        <textarea name="Entrada" id="text-input" cols="32" rows="10"
+            placeholder="Entrada alternativa do codigo binario..." style="display: block;">
+10001100001010000000000000000001
 01101000000000000000000000000000
 1101</textarea>
 
@@ -185,16 +186,28 @@
         </div>
     </div>
 
-    <script type="module" src="simulador.js"></script>
 
     <script>
         // Nao permite digitar nada alem de 0 e 1 na caixa de texto
         document.getElementById("text-input").addEventListener('keydown', (e) => {
-            if (e.key != '0' && e.key != '1' && e.key != 'Enter' && e.key != 'Backspace') {
-                e.preventDefault();
+            switch (e.key) {
+                case '0':
+                case '1':
+                case 'Enter':
+                case 'Backspace':
+                case 'ArrowUp':
+                case 'ArrowDown':
+                case 'ArrowLeft':
+                case 'ArrowRight':
+                    break;
+
+                default:
+                    e.preventDefault();
             }
         }, false);
     </script>
+
+    <script type="module" src="simulador.js"></script>
 </body>
 
 </html>
