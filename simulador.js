@@ -44,7 +44,18 @@ function loadFromTextArea() {
 }
 loadFromTextArea();
 
+updateUI();
+
+let cycleCont = 0;
 function cycle() {
+    cycleCont++;
+    // console.log('Ciclo ', Math.ceil(cycleCont / 2));
+    console.log('Ciclo ', cycleCont);
+
+    // document.getElementById("status").innerText = `Ciclo: ${Math.ceil(cycleCont / 2)}`
+    document.getElementById("status").innerText = `Ciclo: ${cycleCont}`
+
+    // if (cycleCont % 2 != 0) {
     console.log("Primeira metade")
 
     instruction_fetch(FIRST_HALF);
@@ -52,19 +63,23 @@ function cycle() {
     execute(FIRST_HALF);
     memory_read(FIRST_HALF);
     write_back(FIRST_HALF);
-
+    // }
+    // else {
     console.log("Segunda metade")
     instruction_fetch(SECOND_HALF);
     instruction_decode(SECOND_HALF);
     execute(SECOND_HALF);
     memory_read(SECOND_HALF);
     write_back(SECOND_HALF);
+    // }
+
+    updateUI();
 }
 
-for (let i = 1; i <= 5; i++) {
-    console.log("ciclo " + i);
-    cycle();
-}
+// for (let i = 1; i <= 5; i++) {
+//     console.log("ciclo " + i);
+//     cycle();
+// }
 
 // todo: trocar nome das funcoes
 function instruction_fetch(half) { // Busca instrucao
@@ -133,11 +148,12 @@ function execute(half) { // execucao ou calculo de endereco
 
     if (half == FIRST_HALF) {
         this.result = alu.execute(0b10, id_ex[0], id_ex[2]) // rs + imediate
+        this.writeAddress = id_ex[4]; // endereco registrador de escrita load word
         console.log({ result: this.result });
     }
     else if (half == SECOND_HALF) {
         ex_mem[0] = this.result;
-        ex_mem[3] = id_ex[4]; // endereco registrador de escrita load word
+        ex_mem[3] = this.writeAddress;
 
         console.log(ex_mem);
     }
@@ -170,8 +186,8 @@ function write_back(half) { // escrita do resultado
     console.log("Write back")
 
     if (half == FIRST_HALF) {
-        this.dst = mem_wb[1];
         this.value = mem_wb[0];
+        this.dst = mem_wb[1];
 
         console.log({
             dst: this.dst,
@@ -186,11 +202,12 @@ function write_back(half) { // escrita do resultado
             register: registers[this.dst]
         })
 
-        updateUI();
+        // updateUI();
     }
 }
 
 function updateUI() {
+    // Banco de registradores
     htmlWrite('v0', registers[2]);
     htmlWrite('v1', registers[3]);
 
@@ -212,9 +229,26 @@ function updateUI() {
     htmlWrite('sp', registers[29]);
     htmlWrite('fp', registers[20]);
     htmlWrite('ra', registers[31]);
+
+    // Pipeline
+    for (let i = 0; i < if_id.length; i++) {
+        htmlWrite('if-id', if_id[i], i > 0);
+    }
+
+    for (let i = 0; i < id_ex.length; i++) {
+        htmlWrite('id-ex', id_ex[i], i > 0);
+    }
+
+    for (let i = 0; i < ex_mem.length; i++) {
+        htmlWrite('ex-mem', ex_mem[i], i > 0);
+    }
+
+    for (let i = 0; i < mem_wb.length; i++) {
+        htmlWrite('mem-wb', mem_wb[i], i > 0);
+    }
 }
 
-function htmlWrite(id, value) {
+function htmlWrite(id, value, additive) {
     // - Na hora de mostrar os numeros negativos, o javascript usa sinal, 
     //   por exemplo, o -2 e mostrado como -10 ao inves de 11111111111111111111111111111110
     //   Usar o deslocamento para direita >>> com 0 deslocamentos corrige a exibicao
@@ -224,7 +258,11 @@ function htmlWrite(id, value) {
     // - O pad start preenche a string com o caractere informado ate que ela tenha o tamanho do informado
     //   So sera preciso o padStart em numeros positivos, entao pode-se preencher com zeros apenas
 
-    document.getElementById(id).innerHTML = (value >>> 0).toString(2).padStart(32, '0');
+    let text = (value >>> 0).toString(2).padStart(32, '0');
+    if (additive)
+        document.getElementById(id).innerHTML += '<br>' + text;
+    else
+        document.getElementById(id).innerHTML = text
 }
 
 
