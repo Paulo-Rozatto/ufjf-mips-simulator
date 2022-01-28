@@ -14,11 +14,11 @@ const instruction_memory = [];
 // A memoria de dados precisa ter 512 bytes, cria um vetor de 128 inteiros;
 const data_memory = new Int32Array(new ArrayBuffer(512));
 
-// Registradores do pipeline
-const if_id = new Int32Array(new ArrayBuffer(8)); // 64 bits ou 32 bytes
-const id_ex = new Int32Array(new ArrayBuffer(20)); // 160 bits ou 17 bytes - se nao precisasse alocar em multiplos de 4 bytes seriam nescessarios apenas 133 bits
-const ex_mem = new Int32Array(new ArrayBuffer(16)); // 128 bits ou 16 bytes - (precisa de apenas 97 bits)
-const mem_wb = new Int32Array(new ArrayBuffer(8)); // 64 bits ou 32 bytes
+// Registradores do pipeline sendo alocados por quantidade de bytes
+const if_id = new Int32Array(new ArrayBuffer(8)); // 2 posicoes
+const id_ex = new Int32Array(new ArrayBuffer(24)); // 6 posicoes
+const ex_mem = new Int32Array(new ArrayBuffer(20)); // 5 posicoes
+const mem_wb = new Int32Array(new ArrayBuffer(12)); // 3 posicoes
 
 const control = new Control();
 const alu = new ALU();
@@ -29,18 +29,12 @@ function loadFromTextArea() {
 
     for (let instruction of text) {
         // Desconsidera instrucoes com tamanho invalido
-        if (instruction.length < 32) {
+        if (instruction.length < 32)
             continue;
-        }
 
         // passa a instrucao para inteiro levando em consideracao que esta escrita na base 2
         instruction_memory.push(parseInt(instruction, 2) | 0);
     }
-
-    // console.log('Instruction memory: ')
-    // for(let i of instruction_memory) {
-    //     console.log(i);
-    // }
 }
 loadFromTextArea();
 
@@ -76,10 +70,6 @@ function cycle() {
     updateUI();
 }
 
-// for (let i = 1; i <= 5; i++) {
-//     console.log("ciclo " + i);
-//     cycle();
-// }
 
 // todo: trocar nome das funcoes
 function instruction_fetch(half) { // Busca instrucao
@@ -92,8 +82,8 @@ function instruction_fetch(half) { // Busca instrucao
         this.instruction = instruction_memory[pc / 4]; // o array aloca 1 byte em cada posicao e o pc esta em bytes
         this.pcIncremented = pc + 4;
 
-        console.log('instruction: ' + (this.instruction >>> 0).toString(2).padStart(32, '0'))
-        console.log('next pc', this.pcIncremented);
+        // console.log('instruction: ' + (this.instruction >>> 0).toString(2).padStart(32, '0'))
+        // console.log('next pc', this.pcIncremented);
     }
     else if (half == SECOND_HALF) {
         if_id[0] = this.instruction;
@@ -101,7 +91,7 @@ function instruction_fetch(half) { // Busca instrucao
 
         // console.log("pc: ", pc);
         pc = this.pcIncremented;
-        console.log(if_id);
+        // console.log(if_id);
         htmlWrite('pc', pc);
     }
 
@@ -117,26 +107,31 @@ function instruction_decode(half) { // Decodifica instrucoes
         this.imediate = if_id[0] & 0b00000000000000001111111111111111; // [15 - 0]
         this.nextPc = if_id[1];
 
+        control.set(if_id[0]);
+
         // extender o sinal: zero fill para a esquerda e depois  sigend shift para a direita
         imediate = (imediate << 16) >> 16;
 
-        console.log({
-            rs: this.rs,
-            rt: this.rt,
-            imediate: this.imediate,
-            nextPc: this.nextPc
-        })
+        // console.log({
+        //     rs: this.rs,
+        //     rt: this.rt,
+        //     imediate: this.imediate,
+        //     nextPc: this.nextPc
+        // })
 
-        control.set(if_id[0]);
+        // console.log(control.getConcatState().toString(2))
     }
     else if (half == SECOND_HALF) {
-        id_ex[0] = registers[this.rs];
-        id_ex[1] = registers[this.rt];
-        id_ex[2] = this.imediate;
-        id_ex[3] = this.nextPc; // salva PC + 4
-        id_ex[4] = this.rt; // salva endereco para escrever load word
+        id_ex[0] = control.getConcatedState();
+        id_ex[1] = registers[this.rs];
+        id_ex[2] = registers[this.rt];
+        id_ex[3] = this.imediate;
+        id_ex[4] = this.nextPc; // salva PC + 4
+        id_ex[5] = this.rt; // salva endereco para escrever load word
 
-        console.log(id_ex);
+        console.log(control.getConcatedState())
+
+        // console.log(id_ex);
         // console.log(control)
         // console.log(rs, rt);
         // console.log(id_ex);
@@ -147,15 +142,28 @@ function execute(half) { // execucao ou calculo de endereco
     console.log("Execute")
 
     if (half == FIRST_HALF) {
-        this.result = alu.execute(0b10, id_ex[0], id_ex[2]) // rs + imediate
-        this.writeAddress = id_ex[4]; // endereco registrador de escrita load word
-        console.log({ result: this.result });
+        this.regDst =  id_ex[0] & 0b000000001;
+        id_ex[0] = id_ex[0] >>> 1;
+
+        this.aluOp = id_ex[0] & 0b00000011;
+        id_ex[0] = id_ex[0] >>> 2;
+
+        this.aluSrc = id_ex[0] & 0b0000001;
+        id_ex[0] = id_ex[0] >>> 1;
+
+        this.memoryControls = id_ex[0];
+
+        this.result = alu.execute(0b10, id_ex[1], id_ex[3]) // rs + imediate
+        this.writeAddress = id_ex[5]; // endereco registrador de escrita load word
+
+        // console.log({ result: this.result, regDst: control.regDst });
     }
     else if (half == SECOND_HALF) {
-        ex_mem[0] = this.result;
-        ex_mem[3] = this.writeAddress;
+        ex_mem[0] = this.memoryControls;
+        ex_mem[1] = this.result;
+        ex_mem[4] = this.writeAddress;
 
-        console.log(ex_mem);
+        // console.log(ex_mem);
     }
 }
 
@@ -163,22 +171,34 @@ function memory_read(half) { // acesso a memoria
     console.log("Memory read");
 
     if (half == FIRST_HALF) {
+        this.branch = ex_mem[0] & 0b00001;
+        ex_mem[0] = ex_mem[0] >>> 1;
+
+        this.memRead = ex_mem[0] & 0b0001;
+        ex_mem[0] = ex_mem[0] >>> 1;
+
+        this.memWrite = ex_mem[0] & 0b001;
+        ex_mem[0] = ex_mem[0] >>> 1;
+
+        this.wbControls = ex_mem[0];
+
         data_memory[1] = 0b00000000000000000000000010000010
 
         // data_memory guarda words, entao precisa dividir o endereco por 4
-        this.address = Math.floor(ex_mem[0] / 4);
-        this.regAddres = ex_mem[3];
+        this.address = Math.floor(ex_mem[1] / 4);
+        this.regAddres = ex_mem[4];
 
-        console.log({
-            address: this.address,
-            regAddress: this.regAddres
-        })
+        // console.log({
+        //     address: this.address,
+        //     regAddress: this.regAddres
+        // })
     }
     else if (half == SECOND_HALF) {
-        mem_wb[0] = data_memory[this.address];
-        mem_wb[1] = this.regAddres;
+        mem_wb[0] = this.wbControls;
+        mem_wb[1] = data_memory[this.address];
+        mem_wb[2] = this.regAddres;
 
-        console.log(mem_wb);
+        // console.log(mem_wb);
     }
 }
 
@@ -186,21 +206,26 @@ function write_back(half) { // escrita do resultado
     console.log("Write back")
 
     if (half == FIRST_HALF) {
-        this.value = mem_wb[0];
-        this.dst = mem_wb[1];
+        this.regWrite = mem_wb[0] & 0b01;
+        mem_wb[0] >>> 1;
 
-        console.log({
-            dst: this.dst,
-            value: this.value
-        })
+        this.memToReg = mem_wb[0] & 0b1;
+
+        this.value = mem_wb[1];
+        this.dst = mem_wb[2];
+
+        // console.log({
+        //     dst: this.dst,
+        //     value: this.value
+        // })
     }
     else if (half == SECOND_HALF) {
         registers[this.dst] = this.value;
 
         // registers[mem_wb[1]] = mem_wb[0]; // escreve no registrador guardade em mem_wb[1] o valor lido da memoria guardado em mem_wb[0]
-        console.log({
-            register: registers[this.dst]
-        })
+        // console.log({
+        //     register: registers[this.dst]
+        // })
 
         // updateUI();
     }
@@ -264,8 +289,6 @@ function htmlWrite(id, value, additive) {
     else
         document.getElementById(id).innerHTML = text
 }
-
-
 
 /**
  * Operadores bitwise (https://www.w3schools.com/js/js_bitwise.asp)
