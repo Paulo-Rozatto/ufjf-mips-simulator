@@ -51,7 +51,7 @@ class ALU {
             case 0b0110: {
                 return in1 - in2;
             }
-            case 0b011: {
+            case 0b0111: {
                 return in1 < in2 ? 1 : 0;
             }
             default:
