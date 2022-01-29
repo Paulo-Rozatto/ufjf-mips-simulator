@@ -3,7 +3,7 @@ const SECOND_HALF = 1;
 
 // Criacao de array tipado em javascript, estao sendo alocados 128 bytes para corresponder os 32 registradores de 32 bits
 const registers = new Int32Array(new ArrayBuffer(128));
-registers[10] = 0b110;
+// registers[10] = 0b110;
 
 //operacoes bitwise em javascript convertem numeros para inteiros de 32 bits,
 //por isso esta sendo usado o OR aqui e em outras partes do codigo
@@ -51,7 +51,7 @@ function cycle() {
     document.getElementById("status").innerText = `Ciclo: ${cycleCont}`
 
     // if (cycleCont % 2 != 0) {
-    console.log("Primeira metade")
+    // console.log("Primeira metade")
 
     instruction_fetch(FIRST_HALF);
     instruction_decode(FIRST_HALF);
@@ -60,7 +60,7 @@ function cycle() {
     write_back(FIRST_HALF);
     // }
     // else {
-    console.log("Segunda metade")
+    // console.log("Segunda metade")
     instruction_fetch(SECOND_HALF);
     instruction_decode(SECOND_HALF);
     execute(SECOND_HALF);
@@ -76,7 +76,7 @@ function instruction_fetch(half) { // Busca instrucao
     // console.log('IF')
     // console.log(`pc: ${pc}, inst: ${instruction_memory[pc]}`)
 
-    console.log("Instruction fetch");
+    // console.log("Instruction fetch");
     if (half === FIRST_HALF) { // primeira metada de ciclo apenas leitura
 
         this.instruction = instruction_memory[pc / 4]; // o array aloca 1 byte em cada posicao e o pc esta em bytes
@@ -99,7 +99,7 @@ function instruction_fetch(half) { // Busca instrucao
 }
 
 function instruction_decode(half) { // Decodifica instrucoes
-    console.log("Instruction decode")
+    // console.log("Instruction decode")
 
     if (half == FIRST_HALF) {
         this.rs = (if_id[0] >>> 21) & 0b11111; // [25-21]
@@ -109,6 +109,8 @@ function instruction_decode(half) { // Decodifica instrucoes
         this.nextPc = if_id[1];
 
         control.set(if_id[0]);
+
+        this.controlConcat = control.getConcatedState();
 
         // extender o sinal: zero fill para a esquerda e depois  sigend shift para a direita
         this.imediate = (this.imediate << 16) >> 16;
@@ -123,7 +125,7 @@ function instruction_decode(half) { // Decodifica instrucoes
         // console.log(control.getConcatState().toString(2))
     }
     else if (half == SECOND_HALF) {
-        id_ex[0] = control.getConcatedState();
+        id_ex[0] = this.controlConcat;
         id_ex[1] = this.nextPc; // salva PC + 4
         id_ex[2] = registers[this.rs];
         id_ex[3] = registers[this.rt];
@@ -131,7 +133,7 @@ function instruction_decode(half) { // Decodifica instrucoes
         id_ex[5] = this.rt; // salva endereco para escrever load word
         id_ex[6] = this.rd;
 
-        console.log(control.getConcatedState())
+        // console.log(control.getConcatedState())
 
         // console.log(id_ex);
         // console.log(control)
@@ -141,7 +143,7 @@ function instruction_decode(half) { // Decodifica instrucoes
 }
 
 function execute(half) { // execucao ou calculo de endereco
-    console.log("Execute")
+    // console.log("Execute")
 
     if (half == FIRST_HALF) {
         // pega os sinais de controle dessa etapa
@@ -158,18 +160,21 @@ function execute(half) { // execucao ou calculo de endereco
         // Operandos da ALU
         let firstOperand = id_ex[2];
         let secondOperand = aluSrc === 0 ? id_ex[3] : id_ex[4]; // escolhe entre rt e imediate
+        console.log('#2', secondOperand, id_ex[0].toString(2), aluSrc)
 
         // Obter qual operacao sera executada na alu
         let funct = id_ex[4] & 0b111111; // pega ultimos 6 bits do 
         let aluCode = alu.control(opCode, funct);
 
         this.result = alu.execute(aluCode, firstOperand, secondOperand) // rs + imediate
+        console.log('resul', this.result);
 
         // Salva valor guradado em rt para passar adiante e possivelmente ser escrito
         this.rtValue = id_ex[3];
 
         // Escolhe entre endercos de rt e rd para decidir qual o registrador escrito
         this.writeAddress = regDst === 0 ? id_ex[5] : id_ex[6];
+        console.log('add', this.writeAddress);
 
         // console.log({ result: this.result, regDst: control.regDst });
     }
@@ -185,10 +190,8 @@ function execute(half) { // execucao ou calculo de endereco
     }
 }
 
-// data_memory[1] = 0b10000010 // temporario para testat load word
-
 function memory_read(half) { // acesso a memoria
-    console.log("Memory read");
+    // console.log("Memory read");
 
     if (half == FIRST_HALF) {
         let branch = ex_mem[0] & 0b001;
@@ -201,19 +204,17 @@ function memory_read(half) { // acesso a memoria
         this.branchAddress = ex_mem[1];
 
         // data_memory guarda words, entao precisa dividir o endereco por 4
-        this.address = Math.floor(ex_mem[3] / 4);
+        let address = Math.floor(ex_mem[3] / 4);
+        
+        this.regAddress = ex_mem[5];
 
         if (memRead === 1) {
-            this.regAddress = ex_mem[5];
+           this.memContent = data_memory[address];
         }
-        
-        if (memWrite === 1) {
-            let convertedAddress = Math.floor(ex_mem[3] / 4);
 
-            data_memory[convertedAddress] = ex_mem[4]
-            console.log(' -- MEM WRITE --')
-            console.log(convertedAddress, ex_mem[4], data_memory[convertedAddress]);
-            console.log(' -- MEM WRITE --')
+
+        if (memWrite === 1) {
+            data_memory[address] = ex_mem[4]
         }
 
         this.aluAddress = ex_mem[3];
@@ -225,7 +226,7 @@ function memory_read(half) { // acesso a memoria
     }
     else if (half == SECOND_HALF) {
         mem_wb[0] = this.wbControls;
-        mem_wb[1] = data_memory[this.address];
+        mem_wb[1] = this.memContent;
         mem_wb[2] = this.aluAddress;
         mem_wb[3] = this.regAddress;
 
@@ -239,13 +240,13 @@ function memory_read(half) { // acesso a memoria
 }
 
 function write_back(half) { // escrita do resultado
-    console.log("Write back")
+    // console.log("Write back")
 
     if (half == FIRST_HALF) {
-        this.regWrite = mem_wb[0] & 0b01;
+        this.regWrite = mem_wb[0] & 0b1;
         this.memToReg = (mem_wb[0] >>> 1) & 0b1;
 
-        this.value = mem_wb[1];
+        this.value = this.memToReg === 1 ? mem_wb[1] : mem_wb[2];
         this.dst = mem_wb[3];
 
         // console.log({
@@ -254,7 +255,8 @@ function write_back(half) { // escrita do resultado
         // })
     }
     else if (half == SECOND_HALF) {
-        registers[this.dst] = this.value;
+        if (this.regWrite === 1)
+            registers[this.dst] = this.value;
 
         // registers[mem_wb[1]] = mem_wb[0]; // escreve no registrador guardade em mem_wb[1] o valor lido da memoria guardado em mem_wb[0]
         // console.log({

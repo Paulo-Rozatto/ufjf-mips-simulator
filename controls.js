@@ -40,6 +40,11 @@ class Control {
                 console.log('ben');
                 break;
             }
+            case 8: {
+                console.log('addi');
+                this._setADDIState();
+                break;
+            }
             case 35: {
                 console.log('Load word')
                 this._setLWState();
@@ -77,6 +82,17 @@ class Control {
         this.regDst = 1;
         this.opALU = 0b10;
         this.ALUSrc = 0;
+        this.branch = 0;
+        this.memRead = 0;
+        this.memWrite = 0;
+        this.regWrite = 1;
+        this.memToReg = 0;
+    }
+
+    _setADDIState() {
+        this.regDst = 0;
+        this.opALU = 0b00;
+        this.ALUSrc = 1;
         this.branch = 0;
         this.memRead = 0;
         this.memWrite = 0;
