@@ -147,12 +147,18 @@ function execute(half) { // execucao ou calculo de endereco
 
     if (half == FIRST_HALF) {
         // pega os sinais de controle dessa etapa
-        let regDst = id_ex[0] & 0b0001;
-        let opCode = (id_ex[0] & 0b0110) >>> 1;
-        let aluSrc = (id_ex[0] & 0b1000) >>> 3;
+        // let regDst = id_ex[0] & 0b0001;
+        // let opCode = (id_ex[0] & 0b0110) >>> 1;
+        // let aluSrc = (id_ex[0] & 0b1000) >>> 3;
+
+        let regDst = control.getFromConcated('regDst', id_ex[0]);
+        let op1 = control.getFromConcated('opALU1', id_ex[0]);
+        let op0 = control.getFromConcated('opALU0', id_ex[0]);
+        let aluSrc = control.getFromConcated('ALUSrc', id_ex[0]);
+        let opCode = (op1 >> 1) + op0;
 
         // Guarda os sinais de controle restantes para passar para etapa seguinte
-        this.memoryControls = id_ex[0] >>> 4;
+        this.memoryControls = id_ex[0]; //>>> 4;
 
         // Calcula valor de pc desvio - valor de proximo pc + (campo offset deslocado 2 para esquerda)
         this.pcAddress = id_ex[1] + (id_ex[4] << 2);
@@ -194,11 +200,15 @@ function memory_read(half) { // acesso a memoria
     // console.log("Memory read");
 
     if (half == FIRST_HALF) {
-        let branch = ex_mem[0] & 0b001;
-        let memRead = (ex_mem[0] & 0b010) >>> 1;
-        let memWrite = (ex_mem[0] & 0b100) >>> 2;
+        // let branch = ex_mem[0] & 0b001;
+        // let memRead = (ex_mem[0] & 0b010) >>> 1;
+        // let memWrite = (ex_mem[0] & 0b100) >>> 2;
 
-        this.wbControls = ex_mem[0] >>> 3;
+        let branch = control.getFromConcated('branch', ex_mem[0]);
+        let memRead = control.getFromConcated('memRead', ex_mem[0]);
+        let memWrite = control.getFromConcated('memWrite', ex_mem[0]);
+
+        this.wbControls = ex_mem[0];// >>> 3;
 
         let zer = ex_mem[2];
         this.PCSrc = branch && ex_mem[2]; // branch AND alu_zero
@@ -206,11 +216,11 @@ function memory_read(half) { // acesso a memoria
 
         // data_memory guarda words, entao precisa dividir o endereco por 4
         let address = Math.floor(ex_mem[3] / 4);
-        
+
         this.regAddress = ex_mem[5];
 
         if (memRead === 1) {
-           this.memContent = data_memory[address];
+            this.memContent = data_memory[address];
         }
 
 
@@ -245,8 +255,11 @@ function write_back(half) { // escrita do resultado
     // console.log("Write back")
 
     if (half == FIRST_HALF) {
-        this.regWrite = mem_wb[0] & 0b1;
-        this.memToReg = (mem_wb[0] >>> 1) & 0b1;
+        // this.regWrite = mem_wb[0] & 0b1;
+        // this.memToReg = (mem_wb[0] >>> 1) & 0b1;
+
+        this.regWrite = control.getFromConcated('regWrite', mem_wb[0]);
+        this.memToReg = control.getFromConcated('memToReg', mem_wb[0]);
 
         this.value = this.memToReg === 1 ? mem_wb[1] : mem_wb[2];
         this.dst = mem_wb[3];

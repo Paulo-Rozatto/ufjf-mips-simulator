@@ -1,14 +1,16 @@
 class Control {
-    // #ALUSrc = 0;
+    #signalList = ["memToReg", "regWrite", "memWrite", "memRead", "branch", "ALUSrc", "opALU1", "opALU0", "regDst"];
 
     constructor() {
         this.regDst = 0;
-        this.opALU = 0;
+        this.opALU1 = 0;
+        this.opALU0 = 0;
         this.ALUSrc = 10;
         this.branch = 0;
         this.memRead = 0;
         this.memWrite = 0;
         this.regWrite = 0;
+        this.special = 0;
         this.memToReg = 0;
     }
 
@@ -71,16 +73,29 @@ class Control {
     }
 
     getConcatedState() {
-        let concat = (this.memToReg << 8) + (this.regWrite << 7);
-        concat += (this.memWrite << 6) + (this.memRead << 5) + (this.branch << 4);
-        concat += (this.ALUSrc << 3) + (this.opALU << 1) + (this.regDst << 0);
+        let concat = 0b0, test;
+        for (let i = 0; i < this.#signalList.length; i++) {
+            test = (this.#signalList.length - i);
+            concat += this[this.#signalList[i]] << (this.#signalList.length - i - 1)
+        }
 
         return concat;
+    }
+
+    getFromConcated(signal, concated) {
+        let shift = (this.#signalList.length - this.#signalList.indexOf(signal) - 1);
+
+        if (shift > -1) {
+            let bit = (concated >>> shift) & 0b01;
+            return bit;
+        }
     }
 
     _setRTypeState() {
         this.regDst = 1;
         this.opALU = 0b10;
+        this.opALU1 = 1;
+        this.opALU0 = 0;
         this.ALUSrc = 0;
         this.branch = 0;
         this.memRead = 0;
@@ -91,7 +106,9 @@ class Control {
 
     _setADDIState() {
         this.regDst = 0;
-        this.opALU = 0b00;
+        // this.opALU = 0b00;
+        this.opALU1 = 0;
+        this.opALU0 = 0;
         this.ALUSrc = 1;
         this.branch = 0;
         this.memRead = 0;
@@ -102,7 +119,9 @@ class Control {
 
     _setLWState() {
         this.regDst = 0;
-        this.opALU = 0b00;
+        // this.opALU = 0b00;
+        this.opALU1 = 0;
+        this.opALU0 = 0;
         this.ALUSrc = 1;
         this.branch = 0;
         this.memRead = 1;
@@ -113,7 +132,9 @@ class Control {
 
     _setSWState() {
         this.regDst = 0;
-        this.opALU = 0b00;
+        // this.opALU = 0b00;
+        this.opALU1 = 0;
+        this.opALU0 = 0;
         this.ALUSrc = 1;
         this.branch = 0;
         this.memRead = 0;
@@ -124,7 +145,9 @@ class Control {
 
     _setBEQState() {
         this.regDst = 0;
-        this.opALU = 0b01;
+        // this.opALU = 0b01;
+        this.opALU1 = 0;
+        this.opALU0 = 1;
         this.ALUSrc = 0;
         this.branch = 1;
         this.memRead = 0;

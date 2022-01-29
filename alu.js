@@ -2,13 +2,20 @@ class ALU {
     constructor() { }
 
     control(opcode, funct) {
-        // se opcode for 0 ou 1, nao precisa olhar campo funct
-        switch (opcode) {
-            case 0b00: {
-                return 0b0010;
-            }
-            case 0b01: {
-                return 0b0110;
+        // se opcode for 1, nao precisa olhar campo funct
+        if (opcode == 0b01) {
+            return 0b0110;
+        }
+
+        if (opcode == 0) {
+
+            switch (funct) {
+                case 0b101010: {
+                    return 0b0111;
+                }
+
+                default:
+                    return 0b0010;
             }
         }
 
@@ -27,9 +34,9 @@ class ALU {
                 case 0b100101: {
                     return 0b0001;
                 }
-                case 0b101010: {
-                    return 0b0111;
-                }
+                // case 0b101010: {
+                //     return 0b0111;
+                // }
             }
         }
 
