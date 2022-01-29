@@ -200,6 +200,7 @@ function memory_read(half) { // acesso a memoria
 
         this.wbControls = ex_mem[0] >>> 3;
 
+        let zer = ex_mem[2];
         this.PCSrc = branch && ex_mem[2]; // branch AND alu_zero
         this.branchAddress = ex_mem[1];
 
@@ -232,6 +233,7 @@ function memory_read(half) { // acesso a memoria
 
         // Talvez simplemente sobreescrever assim nao funcione, precisa testar
         if (this.PCSrc) {
+            console.log('popopopoopo')
             pc = this.branchAddress;
         }
 
