@@ -3,6 +3,7 @@ const SECOND_HALF = 1;
 
 // Criacao de array tipado em javascript, estao sendo alocados 128 bytes para corresponder os 32 registradores de 32 bits
 const registers = new Int32Array(new ArrayBuffer(128));
+registers[10] = 0b110;
 
 //operacoes bitwise em javascript convertem numeros para inteiros de 32 bits,
 //por isso esta sendo usado o OR aqui e em outras partes do codigo
@@ -16,9 +17,9 @@ const data_memory = new Int32Array(new ArrayBuffer(512));
 
 // Registradores do pipeline sendo alocados por quantidade de bytes
 const if_id = new Int32Array(new ArrayBuffer(8)); // 2 posicoes
-const id_ex = new Int32Array(new ArrayBuffer(24)); // 6 posicoes
-const ex_mem = new Int32Array(new ArrayBuffer(20)); // 5 posicoes
-const mem_wb = new Int32Array(new ArrayBuffer(12)); // 3 posicoes
+const id_ex = new Int32Array(new ArrayBuffer(28)); // 7 posicoes
+const ex_mem = new Int32Array(new ArrayBuffer(24)); // 6 posicoes
+const mem_wb = new Int32Array(new ArrayBuffer(16)); // 4 posicoes
 
 const control = new Control();
 const alu = new ALU();
@@ -70,7 +71,6 @@ function cycle() {
     updateUI();
 }
 
-
 // todo: trocar nome das funcoes
 function instruction_fetch(half) { // Busca instrucao
     // console.log('IF')
@@ -102,15 +102,16 @@ function instruction_decode(half) { // Decodifica instrucoes
     console.log("Instruction decode")
 
     if (half == FIRST_HALF) {
-        this.rs = (if_id[0] >>> 21) & 0b00000000000000000000000000011111; // [25-21]
-        this.rt = (if_id[0] >>> 15) & 0b00000000000000000000000000011111; // [20-16]
-        this.imediate = if_id[0] & 0b00000000000000001111111111111111; // [15 - 0]
+        this.rs = (if_id[0] >>> 21) & 0b11111; // [25-21]
+        this.rt = (if_id[0] >>> 16) & 0b11111; // [20-16]
+        this.rd = (if_id[0] >>> 11) & 0b11111; // [15 - 11]
+        this.imediate = if_id[0] & 0b1111111111111111; // [15 - 0]
         this.nextPc = if_id[1];
 
         control.set(if_id[0]);
 
         // extender o sinal: zero fill para a esquerda e depois  sigend shift para a direita
-        imediate = (imediate << 16) >> 16;
+        this.imediate = (this.imediate << 16) >> 16;
 
         // console.log({
         //     rs: this.rs,
@@ -123,11 +124,12 @@ function instruction_decode(half) { // Decodifica instrucoes
     }
     else if (half == SECOND_HALF) {
         id_ex[0] = control.getConcatedState();
-        id_ex[1] = registers[this.rs];
-        id_ex[2] = registers[this.rt];
-        id_ex[3] = this.imediate;
-        id_ex[4] = this.nextPc; // salva PC + 4
+        id_ex[1] = this.nextPc; // salva PC + 4
+        id_ex[2] = registers[this.rs];
+        id_ex[3] = registers[this.rt];
+        id_ex[4] = this.imediate;
         id_ex[5] = this.rt; // salva endereco para escrever load word
+        id_ex[6] = this.rd;
 
         console.log(control.getConcatedState())
 
@@ -142,51 +144,79 @@ function execute(half) { // execucao ou calculo de endereco
     console.log("Execute")
 
     if (half == FIRST_HALF) {
-        this.regDst =  id_ex[0] & 0b000000001;
-        id_ex[0] = id_ex[0] >>> 1;
+        // pega os sinais de controle dessa etapa
+        let regDst = id_ex[0] & 0b0001;
+        let opCode = (id_ex[0] & 0b0110) >>> 1;
+        let aluSrc = (id_ex[0] & 0b1000) >>> 3;
 
-        this.aluOp = id_ex[0] & 0b00000011;
-        id_ex[0] = id_ex[0] >>> 2;
+        // Guarda os sinais de controle restantes para passar para etapa seguinte
+        this.memoryControls = id_ex[0] >>> 4;
 
-        this.aluSrc = id_ex[0] & 0b0000001;
-        id_ex[0] = id_ex[0] >>> 1;
+        // Calcula valor de pc desvio - valor de proximo pc + (campo offset deslocado 2 para esquerda)
+        this.pcAddress = id_ex[1] + (id_ex[4] << 2);
 
-        this.memoryControls = id_ex[0];
+        // Operandos da ALU
+        let firstOperand = id_ex[2];
+        let secondOperand = aluSrc === 0 ? id_ex[3] : id_ex[4]; // escolhe entre rt e imediate
 
-        this.result = alu.execute(0b10, id_ex[1], id_ex[3]) // rs + imediate
-        this.writeAddress = id_ex[5]; // endereco registrador de escrita load word
+        // Obter qual operacao sera executada na alu
+        let funct = id_ex[4] & 0b111111; // pega ultimos 6 bits do 
+        let aluCode = alu.control(opCode, funct);
+
+        this.result = alu.execute(aluCode, firstOperand, secondOperand) // rs + imediate
+
+        // Salva valor guradado em rt para passar adiante e possivelmente ser escrito
+        this.rtValue = id_ex[3];
+
+        // Escolhe entre endercos de rt e rd para decidir qual o registrador escrito
+        this.writeAddress = regDst === 0 ? id_ex[5] : id_ex[6];
 
         // console.log({ result: this.result, regDst: control.regDst });
     }
     else if (half == SECOND_HALF) {
         ex_mem[0] = this.memoryControls;
-        ex_mem[1] = this.result;
-        ex_mem[4] = this.writeAddress;
+        ex_mem[1] = this.pcAddress;
+        ex_mem[2] = (this.result === 0); // Faz a mesmca coisa que a saida zero da Alu
+        ex_mem[3] = this.result;
+        ex_mem[4] = this.rtValue;
+        ex_mem[5] = this.writeAddress;
 
         // console.log(ex_mem);
     }
 }
 
+// data_memory[1] = 0b10000010 // temporario para testat load word
+
 function memory_read(half) { // acesso a memoria
     console.log("Memory read");
 
     if (half == FIRST_HALF) {
-        this.branch = ex_mem[0] & 0b00001;
-        ex_mem[0] = ex_mem[0] >>> 1;
+        let branch = ex_mem[0] & 0b001;
+        let memRead = (ex_mem[0] & 0b010) >>> 1;
+        let memWrite = (ex_mem[0] & 0b100) >>> 2;
 
-        this.memRead = ex_mem[0] & 0b0001;
-        ex_mem[0] = ex_mem[0] >>> 1;
+        this.wbControls = ex_mem[0] >>> 3;
 
-        this.memWrite = ex_mem[0] & 0b001;
-        ex_mem[0] = ex_mem[0] >>> 1;
-
-        this.wbControls = ex_mem[0];
-
-        data_memory[1] = 0b00000000000000000000000010000010
+        this.PCSrc = branch && ex_mem[2]; // branch AND alu_zero
+        this.branchAddress = ex_mem[1];
 
         // data_memory guarda words, entao precisa dividir o endereco por 4
-        this.address = Math.floor(ex_mem[1] / 4);
-        this.regAddres = ex_mem[4];
+        this.address = Math.floor(ex_mem[3] / 4);
+
+        if (memRead === 1) {
+            this.regAddress = ex_mem[5];
+        }
+        
+        if (memWrite === 1) {
+            let convertedAddress = Math.floor(ex_mem[3] / 4);
+
+            data_memory[convertedAddress] = ex_mem[4]
+            console.log(' -- MEM WRITE --')
+            console.log(convertedAddress, ex_mem[4], data_memory[convertedAddress]);
+            console.log(' -- MEM WRITE --')
+        }
+
+        this.aluAddress = ex_mem[3];
 
         // console.log({
         //     address: this.address,
@@ -196,7 +226,13 @@ function memory_read(half) { // acesso a memoria
     else if (half == SECOND_HALF) {
         mem_wb[0] = this.wbControls;
         mem_wb[1] = data_memory[this.address];
-        mem_wb[2] = this.regAddres;
+        mem_wb[2] = this.aluAddress;
+        mem_wb[3] = this.regAddress;
+
+        // Talvez simplemente sobreescrever assim nao funcione, precisa testar
+        if (this.PCSrc) {
+            pc = this.branchAddress;
+        }
 
         // console.log(mem_wb);
     }
@@ -207,12 +243,10 @@ function write_back(half) { // escrita do resultado
 
     if (half == FIRST_HALF) {
         this.regWrite = mem_wb[0] & 0b01;
-        mem_wb[0] >>> 1;
-
-        this.memToReg = mem_wb[0] & 0b1;
+        this.memToReg = (mem_wb[0] >>> 1) & 0b1;
 
         this.value = mem_wb[1];
-        this.dst = mem_wb[2];
+        this.dst = mem_wb[3];
 
         // console.log({
         //     dst: this.dst,

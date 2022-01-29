@@ -34,6 +34,7 @@ class ALU {
         }
 
         console.log('Invalid opcode ', opcode);
+        return 0b1111;
     }
 
     execute(alucode, in1, in2) {
