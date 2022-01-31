@@ -3,7 +3,6 @@ const SECOND_HALF = 1;
 
 // Criacao de array tipado em javascript, estao sendo alocados 128 bytes para corresponder os 32 registradores de 32 bits
 const registers = new Int32Array(new ArrayBuffer(128));
-// registers[10] = 0b110;
 
 //operacoes bitwise em javascript convertem numeros para inteiros de 32 bits,
 //por isso esta sendo usado o OR aqui e em outras partes do codigo
@@ -16,9 +15,9 @@ const instruction_memory = [];
 const data_memory = new Int32Array(new ArrayBuffer(512));
 
 // Registradores do pipeline sendo alocados por quantidade de bytes
-const if_id = new Int32Array(new ArrayBuffer(8)); // 2 posicoes
-const id_ex = new Int32Array(new ArrayBuffer(32)); // 8 posicoes
-const ex_mem = new Int32Array(new ArrayBuffer(24)); // 6 posicoes
+const if_id = new Int32Array(new ArrayBuffer(12)); // 3 posicoes
+const id_ex = new Int32Array(new ArrayBuffer(36)); // 9 posicoes
+const ex_mem = new Int32Array(new ArrayBuffer(28)); // 7 posicoes
 const mem_wb = new Int32Array(new ArrayBuffer(16)); // 4 posicoes
 
 const control = new Control();
@@ -108,6 +107,7 @@ function instruction_decode(half) { // Decodifica instrucoes
         this.shamt = (if_id[0] >>> 6) & 0b11111; // [10-6]
         this.imediate = if_id[0] & 0b1111111111111111; // [15 - 0]
         this.nextPc = if_id[1];
+        this.jumpAddress = if_id[0] & 0b00000011111111111111111111111111; // [25-0]
 
         control.set(if_id[0]);
 
@@ -134,6 +134,7 @@ function instruction_decode(half) { // Decodifica instrucoes
         id_ex[5] = this.shamt;
         id_ex[6] = this.rt; // salva endereco para escrever load word
         id_ex[7] = this.rd;
+        id_ex[8] = this.jumpAddress;
 
         // console.log(control.getConcatedState())
 
@@ -159,6 +160,11 @@ function execute(half) { // execucao ou calculo de endereco
         let aluSrc = control.getFromConcated('ALUSrc', id_ex[0]);
         let shift = control.getFromConcated('shft', id_ex[0]);
         let opAlu = (op1 << 1) + op0;
+
+         // 4 bits mais significativos de PC + 4
+         let mostSig  = id_ex[1] & 0b11110000000000000000000000000000;
+         // 4 bits mais significativos de PC + 4 concatenados com o endereco do campo imediate da instrucao deslocado 2x para esquerda
+        this.jAddress =  mostSig + (id_ex[8] << 2);
 
         // Guarda os sinais de controle restantes para passar para etapa seguinte
         this.memoryControls = id_ex[0]; //>>> 4;
@@ -204,7 +210,7 @@ function execute(half) { // execucao ou calculo de endereco
         ex_mem[3] = this.result;
         ex_mem[4] = this.rtValue;
         ex_mem[5] = this.writeAddress;
-
+        ex_mem[6] = this.jAddress;
         // console.log(ex_mem);
     }
 }
@@ -213,12 +219,9 @@ function memory_read(half) { // acesso a memoria
     // console.log("Memory read");
 
     if (half == FIRST_HALF) {
-        // let branch = ex_mem[0] & 0b001;
-        // let memRead = (ex_mem[0] & 0b010) >>> 1;
-        // let memWrite = (ex_mem[0] & 0b100) >>> 2;
-
         let branch = control.getFromConcated('branch', ex_mem[0]);
         let bne = control.getFromConcated('bne', ex_mem[0]);
+        let jump = control.getFromConcated('jump', ex_mem[0]);
         let memRead = control.getFromConcated('memRead', ex_mem[0]);
         let memWrite = control.getFromConcated('memWrite', ex_mem[0]);
 
@@ -227,8 +230,15 @@ function memory_read(half) { // acesso a memoria
         if (bne === 1)
             ex_mem[2] = !ex_mem[2];
 
-        this.PCSrc = branch && ex_mem[2]; // branch AND alu_zero
-        this.branchAddress = ex_mem[1];
+        this.PCSrc = (branch && ex_mem[2]) || jump; // (branch AND alu_zero) OR jump
+
+        this.branchAddress
+        if (jump === 1) {
+            this.branchAddress = ex_mem[6];
+        }
+        else {
+            this.branchAddress = ex_mem[1]; //
+        }
 
         // data_memory guarda words, entao precisa dividir o endereco por 4
         let address = Math.floor(ex_mem[3] / 4);
@@ -236,7 +246,6 @@ function memory_read(half) { // acesso a memoria
         if (memRead === 1) {
             this.memContent = data_memory[address];
         }
-
 
         if (memWrite === 1) {
             data_memory[address] = ex_mem[4]
@@ -298,6 +307,9 @@ function write_back(half) { // escrita do resultado
 }
 
 function updateUI() {
+    // PC
+    htmlWrite('pc', pc);
+
     // Banco de registradores
     htmlWrite('v0', registers[2]);
     htmlWrite('v1', registers[3]);

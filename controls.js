@@ -1,5 +1,5 @@
 class Control {
-    #signalList = ["memToReg", "regWrite", "memWrite", "memRead", "branch", "bne", "shft", "ALUSrc", "opALU1", "opALU0", "regDst"];
+    #signalList = ["memToReg", "regWrite", "memWrite", "memRead", "branch", "bne", "jump", "shft", "ALUSrc", "opALU1", "opALU0", "regDst"];
 
     constructor() {
         this.regDst = 0;
@@ -8,6 +8,7 @@ class Control {
         this.ALUSrc = 10;
         this.branch = 0;
         this.bne = 0;
+        this.jump = 0;
         this.shft = 0; // shift esta sem a letra i, pois ja existe a funcao shift no javascript
         this.memRead = 0;
         this.memWrite = 0;
@@ -34,6 +35,7 @@ class Control {
             }
             case 2: {
                 console.log('j');
+                this._setJumpState()
                 break;
             }
             case 3: {
@@ -73,6 +75,7 @@ class Control {
                 this.ALUSrc = 10;
                 this.branch = 0;
                 this.bne = 0;
+                this.jump = 0;
                 this.memRead = 0;
                 this.memWrite = 0;
                 this.regWrite = 0;
@@ -101,6 +104,21 @@ class Control {
         }
     }
 
+    _setJumpState() {
+        this.regDst = 0;
+        this.opALU1 = 0;
+        this.opALU0 = 0;
+        this.ALUSrc = 0;
+        this.shft = 0;
+        this.branch = 0;
+        this.bne = 0;
+        this.jump = 1;
+        this.memRead = 0;
+        this.memWrite = 0;
+        this.regWrite = 0;
+        this.memToReg = 0;
+    }
+
     _setRTypeState() {
         this.regDst = 1;
         this.opALU = 0b10;
@@ -110,6 +128,7 @@ class Control {
         this.shft = 0;
         this.branch = 0;
         this.bne = 0;
+        this.jump = 0;
         this.memRead = 0;
         this.memWrite = 0;
         this.regWrite = 1;
@@ -125,6 +144,7 @@ class Control {
         this.shft = 0;
         this.branch = 0;
         this.bne = 0;
+        this.jump = 0;
         this.memRead = 0;
         this.memWrite = 0;
         this.regWrite = 1;
@@ -140,6 +160,7 @@ class Control {
         this.shft = 0;
         this.branch = 0;
         this.bne = 0;
+        this.jump = 0;
         this.memRead = 1;
         this.memWrite = 0;
         this.regWrite = 1;
@@ -155,6 +176,7 @@ class Control {
         this.shft = 0;
         this.branch = 0;
         this.bne = 0;
+        this.jump = 0;
         this.memRead = 0;
         this.memWrite = 1;
         this.regWrite = 0;
@@ -169,6 +191,8 @@ class Control {
         this.ALUSrc = 0;
         this.shft = 0;
         this.branch = 1;
+        this.bne = 0;
+        this.jump = 0;
         this.memRead = 0;
         this.memWrite = 0;
         this.regWrite = 0;
