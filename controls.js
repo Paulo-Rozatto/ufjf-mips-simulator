@@ -1,5 +1,5 @@
 class Control {
-    #signalList = ["memToReg", "regWrite", "memWrite", "memRead", "branch", "ALUSrc", "opALU1", "opALU0", "regDst"];
+    #signalList = ["memToReg", "regWrite", "memWrite", "memRead", "branch", "shft", "ALUSrc", "opALU1", "opALU0", "regDst"];
 
     constructor() {
         this.regDst = 0;
@@ -17,12 +17,17 @@ class Control {
     set(instruction) {
         // pega os 6 primeiros bits da instrucao
         let opcode = instruction >>> 26;
+        let funct = instruction & 0b0111111;
         // console.log(opcode.toString(2))
 
         switch (opcode) {
             case 0: {
                 console.log('R-type')
                 this._setRTypeState()
+
+                if(funct == 0b0) {
+                    this.shft = 1;
+                }
                 break;
             }
             case 2: {
@@ -97,6 +102,7 @@ class Control {
         this.opALU1 = 1;
         this.opALU0 = 0;
         this.ALUSrc = 0;
+        this.shft = 0;
         this.branch = 0;
         this.memRead = 0;
         this.memWrite = 0;
@@ -110,6 +116,7 @@ class Control {
         this.opALU1 = 0;
         this.opALU0 = 0;
         this.ALUSrc = 1;
+        this.shft = 0;
         this.branch = 0;
         this.memRead = 0;
         this.memWrite = 0;
@@ -123,6 +130,7 @@ class Control {
         this.opALU1 = 0;
         this.opALU0 = 0;
         this.ALUSrc = 1;
+        this.shft = 0;
         this.branch = 0;
         this.memRead = 1;
         this.memWrite = 0;
@@ -136,6 +144,7 @@ class Control {
         this.opALU1 = 0;
         this.opALU0 = 0;
         this.ALUSrc = 1;
+        this.shft = 0;
         this.branch = 0;
         this.memRead = 0;
         this.memWrite = 1;
@@ -149,6 +158,7 @@ class Control {
         this.opALU1 = 0;
         this.opALU0 = 1;
         this.ALUSrc = 0;
+        this.shft = 0;
         this.branch = 1;
         this.memRead = 0;
         this.memWrite = 0;

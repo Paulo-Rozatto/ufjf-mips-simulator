@@ -4,7 +4,6 @@ class ALU {
     control(opAlu, funct) {
         // se opcode for 0 ou 1, nao precisa olhar campo funct
         switch (opAlu) {
-
             case 0:
                 return 0b0010;
             case 1:
@@ -49,6 +48,9 @@ class ALU {
             }
             case 0b0010: {
                 return in1 + in2;
+            }
+            case 0b0101: {
+                return in1 << in2;
             }
             case 0b0110: {
                 return in1 - in2;

@@ -17,7 +17,7 @@ const data_memory = new Int32Array(new ArrayBuffer(512));
 
 // Registradores do pipeline sendo alocados por quantidade de bytes
 const if_id = new Int32Array(new ArrayBuffer(8)); // 2 posicoes
-const id_ex = new Int32Array(new ArrayBuffer(28)); // 7 posicoes
+const id_ex = new Int32Array(new ArrayBuffer(32)); // 8 posicoes
 const ex_mem = new Int32Array(new ArrayBuffer(24)); // 6 posicoes
 const mem_wb = new Int32Array(new ArrayBuffer(16)); // 4 posicoes
 
@@ -105,6 +105,7 @@ function instruction_decode(half) { // Decodifica instrucoes
         this.rs = (if_id[0] >>> 21) & 0b11111; // [25-21]
         this.rt = (if_id[0] >>> 16) & 0b11111; // [20-16]
         this.rd = (if_id[0] >>> 11) & 0b11111; // [15 - 11]
+        this.shamt = (if_id[0] >>> 6) & 0b11111; // [10-6]
         this.imediate = if_id[0] & 0b1111111111111111; // [15 - 0]
         this.nextPc = if_id[1];
 
@@ -130,8 +131,9 @@ function instruction_decode(half) { // Decodifica instrucoes
         id_ex[2] = registers[this.rs];
         id_ex[3] = registers[this.rt];
         id_ex[4] = this.imediate;
-        id_ex[5] = this.rt; // salva endereco para escrever load word
-        id_ex[6] = this.rd;
+        id_ex[5] = this.shamt;
+        id_ex[6] = this.rt; // salva endereco para escrever load word
+        id_ex[7] = this.rd;
 
         // console.log(control.getConcatedState())
 
@@ -155,6 +157,7 @@ function execute(half) { // execucao ou calculo de endereco
         let op1 = control.getFromConcated('opALU1', id_ex[0]);
         let op0 = control.getFromConcated('opALU0', id_ex[0]);
         let aluSrc = control.getFromConcated('ALUSrc', id_ex[0]);
+        let shift = control.getFromConcated('shft', id_ex[0]);
         let opAlu = (op1 << 1) + op0;
 
         // Guarda os sinais de controle restantes para passar para etapa seguinte
@@ -164,8 +167,18 @@ function execute(half) { // execucao ou calculo de endereco
         this.pcAddress = id_ex[1] + (id_ex[4] << 2);
 
         // Operandos da ALU
-        let firstOperand = id_ex[2];
-        let secondOperand = aluSrc === 0 ? id_ex[3] : id_ex[4]; // escolhe entre rt e imediate
+        let firstOperand;
+        let secondOperand;
+
+        if (shift === 1) {
+            firstOperand = id_ex[3];
+            secondOperand = id_ex[5]; // shamt
+        }
+        else {
+            firstOperand = id_ex[2];
+            secondOperand = aluSrc === 0 ? id_ex[3] : id_ex[4]; // escolhe entre rt e imediate
+        }
+
         console.log('#2', secondOperand, id_ex[0].toString(2), aluSrc)
 
         // Obter qual operacao sera executada na alu
@@ -179,7 +192,7 @@ function execute(half) { // execucao ou calculo de endereco
         this.rtValue = id_ex[3];
 
         // Escolhe entre endercos de rt e rd para decidir qual o registrador escrito
-        this.writeAddress = regDst === 0 ? id_ex[5] : id_ex[6];
+        this.writeAddress = regDst === 0 ? id_ex[6] : id_ex[7];
         console.log('add', this.writeAddress);
 
         // console.log({ result: this.result, regDst: control.regDst });
@@ -210,14 +223,11 @@ function memory_read(half) { // acesso a memoria
 
         this.wbControls = ex_mem[0];// >>> 3;
 
-        let zer = ex_mem[2];
         this.PCSrc = branch && ex_mem[2]; // branch AND alu_zero
         this.branchAddress = ex_mem[1];
 
         // data_memory guarda words, entao precisa dividir o endereco por 4
         let address = Math.floor(ex_mem[3] / 4);
-
-        this.regAddress = ex_mem[5];
 
         if (memRead === 1) {
             this.memContent = data_memory[address];
@@ -228,7 +238,8 @@ function memory_read(half) { // acesso a memoria
             data_memory[address] = ex_mem[4]
         }
 
-        this.aluAddress = ex_mem[3];
+        this.aluResult = ex_mem[3];
+        this.regAddress = ex_mem[5];
 
         // console.log({
         //     address: this.address,
@@ -238,7 +249,7 @@ function memory_read(half) { // acesso a memoria
     else if (half == SECOND_HALF) {
         mem_wb[0] = this.wbControls;
         mem_wb[1] = this.memContent;
-        mem_wb[2] = this.aluAddress;
+        mem_wb[2] = this.aluResult;
         mem_wb[3] = this.regAddress;
 
         // Talvez simplemente sobreescrever assim nao funcione, precisa testar
