@@ -17,7 +17,7 @@ const data_memory = new Int32Array(new ArrayBuffer(512));
 // Registradores do pipeline sendo alocados por quantidade de bytes
 const if_id = new Int32Array(new ArrayBuffer(12)); // 3 posicoes
 const id_ex = new Int32Array(new ArrayBuffer(36)); // 9 posicoes
-const ex_mem = new Int32Array(new ArrayBuffer(28)); // 7 posicoes
+const ex_mem = new Int32Array(new ArrayBuffer(32)); // 8 posicoes
 const mem_wb = new Int32Array(new ArrayBuffer(16)); // 4 posicoes
 
 const control = new Control();
@@ -161,16 +161,18 @@ function execute(half) { // execucao ou calculo de endereco
         let shift = control.getFromConcated('shft', id_ex[0]);
         let opAlu = (op1 << 1) + op0;
 
-         // 4 bits mais significativos de PC + 4
-         let mostSig  = id_ex[1] & 0b11110000000000000000000000000000;
-         // 4 bits mais significativos de PC + 4 concatenados com o endereco do campo imediate da instrucao deslocado 2x para esquerda
-        this.jAddress =  mostSig + (id_ex[8] << 2);
+        this.pcNext = id_ex[1];
+
+        // 4 bits mais significativos de PC + 4
+        let mostSig = id_ex[1] & 0b11110000000000000000000000000000;
+        // 4 bits mais significativos de PC + 4 concatenados com o endereco do campo imediate da instrucao deslocado 2x para esquerda
+        this.jAddress = mostSig + (id_ex[8] << 2);
 
         // Guarda os sinais de controle restantes para passar para etapa seguinte
         this.memoryControls = id_ex[0]; //>>> 4;
 
-        // Calcula valor de pc desvio - valor de proximo pc + (campo offset deslocado 2 para esquerda)
-        this.pcAddress = id_ex[1] + (id_ex[4] << 2);
+        // Calcula valor de pc desvio: valor de proximo pc + (campo offset deslocado 2 para esquerda)
+        this.branchAdress = id_ex[1] + (id_ex[4] << 2);
 
         // Operandos da ALU
         let firstOperand;
@@ -185,32 +187,27 @@ function execute(half) { // execucao ou calculo de endereco
             secondOperand = aluSrc === 0 ? id_ex[3] : id_ex[4]; // escolhe entre rt e imediate
         }
 
-        console.log('#2', secondOperand, id_ex[0].toString(2), aluSrc)
-
         // Obter qual operacao sera executada na alu
         let funct = id_ex[4] & 0b111111; // pega ultimos 6 bits do 
         let aluCode = alu.control(opAlu, funct);
 
         this.result = alu.execute(aluCode, firstOperand, secondOperand) // rs + imediate
-        console.log('resul', this.result);
 
         // Salva valor guradado em rt para passar adiante e possivelmente ser escrito
         this.rtValue = id_ex[3];
 
         // Escolhe entre endercos de rt e rd para decidir qual o registrador escrito
         this.writeAddress = regDst === 0 ? id_ex[6] : id_ex[7];
-        console.log('add', this.writeAddress);
-
-        // console.log({ result: this.result, regDst: control.regDst });
     }
     else if (half == SECOND_HALF) {
         ex_mem[0] = this.memoryControls;
-        ex_mem[1] = this.pcAddress;
-        ex_mem[2] = (this.result === 0); // Faz a mesmca coisa que a saida zero da Alu
-        ex_mem[3] = this.result;
-        ex_mem[4] = this.rtValue;
-        ex_mem[5] = this.writeAddress;
-        ex_mem[6] = this.jAddress;
+        ex_mem[1] = this.pcNext;
+        ex_mem[2] = this.branchAdress;
+        ex_mem[3] = (this.result === 0); // Faz a mesmca coisa que a saida zero da Alu
+        ex_mem[4] = this.result;
+        ex_mem[5] = this.rtValue;
+        ex_mem[6] = this.writeAddress;
+        ex_mem[7] = this.jAddress;
         // console.log(ex_mem);
     }
 }
@@ -222,47 +219,51 @@ function memory_read(half) { // acesso a memoria
         let branch = control.getFromConcated('branch', ex_mem[0]);
         let bne = control.getFromConcated('bne', ex_mem[0]);
         let jump = control.getFromConcated('jump', ex_mem[0]);
+        let link = control.getFromConcated('link', ex_mem[0]);
         let memRead = control.getFromConcated('memRead', ex_mem[0]);
         let memWrite = control.getFromConcated('memWrite', ex_mem[0]);
 
         this.wbControls = ex_mem[0];// >>> 3;
 
         if (bne === 1)
-            ex_mem[2] = !ex_mem[2];
+            ex_mem[3] = !ex_mem[3];
 
-        this.PCSrc = (branch && ex_mem[2]) || jump; // (branch AND alu_zero) OR jump
+        this.PCSrc = (branch && ex_mem[3]) || jump; // (branch AND alu_zero) OR jump
 
         this.branchAddress
         if (jump === 1) {
-            this.branchAddress = ex_mem[6];
+            this.branchAddress = ex_mem[7];
         }
         else {
-            this.branchAddress = ex_mem[1]; //
+            this.branchAddress = ex_mem[2]; //
         }
 
         // data_memory guarda words, entao precisa dividir o endereco por 4
-        let address = Math.floor(ex_mem[3] / 4);
+        let address = Math.floor(ex_mem[4] / 4);
 
         if (memRead === 1) {
             this.memContent = data_memory[address];
         }
 
         if (memWrite === 1) {
-            data_memory[address] = ex_mem[4]
+            data_memory[address] = ex_mem[5]
         }
 
-        this.aluResult = ex_mem[3];
-        this.regAddress = ex_mem[5];
+        // Se for link, mande PC + 4 para a escrita no registrador $ra, senao mande o resultado da ALU para escrita no registrador guardado
+        if (link === 1) {
+            this.writeValue = ex_mem[1];
+            this.regAddress = 31;
+        }
+        else {
+            this.writeValue = ex_mem[4];
+            this.regAddress = ex_mem[6];
+        }
 
-        // console.log({
-        //     address: this.address,
-        //     regAddress: this.regAddres
-        // })
     }
     else if (half == SECOND_HALF) {
         mem_wb[0] = this.wbControls;
         mem_wb[1] = this.memContent;
-        mem_wb[2] = this.aluResult;
+        mem_wb[2] = this.writeValue;
         mem_wb[3] = this.regAddress;
 
         // Talvez simplemente sobreescrever assim nao funcione, precisa testar
