@@ -218,10 +218,14 @@ function memory_read(half) { // acesso a memoria
         // let memWrite = (ex_mem[0] & 0b100) >>> 2;
 
         let branch = control.getFromConcated('branch', ex_mem[0]);
+        let bne = control.getFromConcated('bne', ex_mem[0]);
         let memRead = control.getFromConcated('memRead', ex_mem[0]);
         let memWrite = control.getFromConcated('memWrite', ex_mem[0]);
 
         this.wbControls = ex_mem[0];// >>> 3;
+
+        if (bne === 1)
+            ex_mem[2] = !ex_mem[2];
 
         this.PCSrc = branch && ex_mem[2]; // branch AND alu_zero
         this.branchAddress = ex_mem[1];

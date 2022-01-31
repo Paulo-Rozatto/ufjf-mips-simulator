@@ -1,5 +1,5 @@
 class Control {
-    #signalList = ["memToReg", "regWrite", "memWrite", "memRead", "branch", "shft", "ALUSrc", "opALU1", "opALU0", "regDst"];
+    #signalList = ["memToReg", "regWrite", "memWrite", "memRead", "branch", "bne", "shft", "ALUSrc", "opALU1", "opALU0", "regDst"];
 
     constructor() {
         this.regDst = 0;
@@ -7,6 +7,8 @@ class Control {
         this.opALU0 = 0;
         this.ALUSrc = 10;
         this.branch = 0;
+        this.bne = 0;
+        this.shft = 0; // shift esta sem a letra i, pois ja existe a funcao shift no javascript
         this.memRead = 0;
         this.memWrite = 0;
         this.regWrite = 0;
@@ -25,7 +27,7 @@ class Control {
                 console.log('R-type')
                 this._setRTypeState()
 
-                if(funct == 0b0) {
+                if (funct == 0b0) {
                     this.shft = 1;
                 }
                 break;
@@ -45,6 +47,8 @@ class Control {
             }
             case 5: {
                 console.log('ben');
+                this._setBEQState();
+                this.bne = 1;
                 break;
             }
             case 8: {
@@ -68,6 +72,7 @@ class Control {
                 this.opALU = 0;
                 this.ALUSrc = 10;
                 this.branch = 0;
+                this.bne = 0;
                 this.memRead = 0;
                 this.memWrite = 0;
                 this.regWrite = 0;
@@ -104,6 +109,7 @@ class Control {
         this.ALUSrc = 0;
         this.shft = 0;
         this.branch = 0;
+        this.bne = 0;
         this.memRead = 0;
         this.memWrite = 0;
         this.regWrite = 1;
@@ -118,6 +124,7 @@ class Control {
         this.ALUSrc = 1;
         this.shft = 0;
         this.branch = 0;
+        this.bne = 0;
         this.memRead = 0;
         this.memWrite = 0;
         this.regWrite = 1;
@@ -132,6 +139,7 @@ class Control {
         this.ALUSrc = 1;
         this.shft = 0;
         this.branch = 0;
+        this.bne = 0;
         this.memRead = 1;
         this.memWrite = 0;
         this.regWrite = 1;
@@ -146,6 +154,7 @@ class Control {
         this.ALUSrc = 1;
         this.shft = 0;
         this.branch = 0;
+        this.bne = 0;
         this.memRead = 0;
         this.memWrite = 1;
         this.regWrite = 0;
