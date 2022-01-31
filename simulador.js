@@ -159,14 +159,20 @@ function execute(half) { // execucao ou calculo de endereco
         let op0 = control.getFromConcated('opALU0', id_ex[0]);
         let aluSrc = control.getFromConcated('ALUSrc', id_ex[0]);
         let shift = control.getFromConcated('shft', id_ex[0]);
+        let jr = control.getFromConcated('jr', id_ex[0]);
         let opAlu = (op1 << 1) + op0;
 
         this.pcNext = id_ex[1];
 
-        // 4 bits mais significativos de PC + 4
-        let mostSig = id_ex[1] & 0b11110000000000000000000000000000;
-        // 4 bits mais significativos de PC + 4 concatenados com o endereco do campo imediate da instrucao deslocado 2x para esquerda
-        this.jAddress = mostSig + (id_ex[8] << 2);
+
+        if (jr) {
+            this.jAddress = id_ex[2];
+        } else {
+            // 4 bits mais significativos de PC + 4
+            let mostSig = id_ex[1] & 0b11110000000000000000000000000000;
+            // 4 bits mais significativos de PC + 4 concatenados com o endereco do campo imediate da instrucao deslocado 2x para esquerda
+            this.jAddress = mostSig + (id_ex[8] << 2);
+        }
 
         // Guarda os sinais de controle restantes para passar para etapa seguinte
         this.memoryControls = id_ex[0]; //>>> 4;
@@ -268,7 +274,6 @@ function memory_read(half) { // acesso a memoria
 
         // Talvez simplemente sobreescrever assim nao funcione, precisa testar
         if (this.PCSrc) {
-            console.log('popopopoopo')
             pc = this.branchAddress;
         }
 
