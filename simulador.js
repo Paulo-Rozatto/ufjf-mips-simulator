@@ -155,7 +155,7 @@ function execute(half) { // execucao ou calculo de endereco
         let op1 = control.getFromConcated('opALU1', id_ex[0]);
         let op0 = control.getFromConcated('opALU0', id_ex[0]);
         let aluSrc = control.getFromConcated('ALUSrc', id_ex[0]);
-        let opCode = (op1 >> 1) + op0;
+        let opAlu = (op1 << 1) + op0;
 
         // Guarda os sinais de controle restantes para passar para etapa seguinte
         this.memoryControls = id_ex[0]; //>>> 4;
@@ -170,7 +170,7 @@ function execute(half) { // execucao ou calculo de endereco
 
         // Obter qual operacao sera executada na alu
         let funct = id_ex[4] & 0b111111; // pega ultimos 6 bits do 
-        let aluCode = alu.control(opCode, funct);
+        let aluCode = alu.control(opAlu, funct);
 
         this.result = alu.execute(aluCode, firstOperand, secondOperand) // rs + imediate
         console.log('resul', this.result);
