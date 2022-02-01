@@ -59,7 +59,7 @@ class ALU {
                 return in1 < in2 ? 1 : 0;
             }
             default:
-                console.log('ALU operantion not implemented', alucode.toString(2).padStart(4, '0'))
+                console.log('ALU operantion not implemented', alucode)
         }
     }
 }

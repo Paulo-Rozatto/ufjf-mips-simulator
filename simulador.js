@@ -43,63 +43,41 @@ updateUI();
 let cycleCont = 0;
 function cycle() {
     cycleCont++;
-    // console.log('Ciclo ', Math.ceil(cycleCont / 2));
     console.log('Ciclo ', cycleCont);
 
-    // document.getElementById("status").innerText = `Ciclo: ${Math.ceil(cycleCont / 2)}`
     document.getElementById("status").innerText = `Ciclo: ${cycleCont}`
 
-    // if (cycleCont % 2 != 0) {
-    // console.log("Primeira metade")
-
-    instruction_fetch(FIRST_HALF);
-    instruction_decode(FIRST_HALF);
+    instructionFetch(FIRST_HALF);
+    instructionDecode(FIRST_HALF);
     execute(FIRST_HALF);
-    memory_read(FIRST_HALF);
-    write_back(FIRST_HALF);
-    // }
-    // else {
-    // console.log("Segunda metade")
-    instruction_fetch(SECOND_HALF);
-    instruction_decode(SECOND_HALF);
+    memoryRead(FIRST_HALF);
+    writeBack(FIRST_HALF);
+
+    instructionFetch(SECOND_HALF);
+    instructionDecode(SECOND_HALF);
     execute(SECOND_HALF);
-    memory_read(SECOND_HALF);
-    write_back(SECOND_HALF);
-    // }
+    memoryRead(SECOND_HALF);
+    writeBack(SECOND_HALF);
 
     updateUI();
 }
 
-// todo: trocar nome das funcoes
-function instruction_fetch(half) { // Busca instrucao
-    // console.log('IF')
-    // console.log(`pc: ${pc}, inst: ${instruction_memory[pc]}`)
-
-    // console.log("Instruction fetch");
+function instructionFetch(half) { // Busca instrucao
     if (half === FIRST_HALF) { // primeira metada de ciclo apenas leitura
 
         this.instruction = instruction_memory[pc / 4]; // o array aloca 1 byte em cada posicao e o pc esta em bytes
         this.pcIncremented = pc + 4;
-
-        // console.log('instruction: ' + (this.instruction >>> 0).toString(2).padStart(32, '0'))
-        // console.log('next pc', this.pcIncremented);
     }
     else if (half == SECOND_HALF) {
         if_id[0] = this.instruction;
         if_id[1] = this.pcIncremented;
 
-        // console.log("pc: ", pc);
         pc = this.pcIncremented;
-        // console.log(if_id);
         htmlWrite('pc', pc);
     }
-
-    // console.log(if_id);
 }
 
-function instruction_decode(half) { // Decodifica instrucoes
-    // console.log("Instruction decode")
-
+function instructionDecode(half) { // Decodifica instrucoes
     if (half == FIRST_HALF) {
         this.rs = (if_id[0] >>> 21) & 0b11111; // [25-21]
         this.rt = (if_id[0] >>> 16) & 0b11111; // [20-16]
@@ -115,15 +93,6 @@ function instruction_decode(half) { // Decodifica instrucoes
 
         // extender o sinal: zero fill para a esquerda e depois  sigend shift para a direita
         this.imediate = (this.imediate << 16) >> 16;
-
-        // console.log({
-        //     rs: this.rs,
-        //     rt: this.rt,
-        //     imediate: this.imediate,
-        //     nextPc: this.nextPc
-        // })
-
-        // console.log(control.getConcatState().toString(2))
     }
     else if (half == SECOND_HALF) {
         id_ex[0] = this.controlConcat;
@@ -135,13 +104,6 @@ function instruction_decode(half) { // Decodifica instrucoes
         id_ex[6] = this.rt; // salva endereco para escrever load word
         id_ex[7] = this.rd;
         id_ex[8] = this.jumpAddress;
-
-        // console.log(control.getConcatedState())
-
-        // console.log(id_ex);
-        // console.log(control)
-        // console.log(rs, rt);
-        // console.log(id_ex);
     }
 }
 
@@ -149,11 +111,6 @@ function execute(half) { // execucao ou calculo de endereco
     // console.log("Execute")
 
     if (half == FIRST_HALF) {
-        // pega os sinais de controle dessa etapa
-        // let regDst = id_ex[0] & 0b0001;
-        // let opCode = (id_ex[0] & 0b0110) >>> 1;
-        // let aluSrc = (id_ex[0] & 0b1000) >>> 3;
-
         let regDst = control.getFromConcated('regDst', id_ex[0]);
         let op1 = control.getFromConcated('opALU1', id_ex[0]);
         let op0 = control.getFromConcated('opALU0', id_ex[0]);
@@ -164,10 +121,10 @@ function execute(half) { // execucao ou calculo de endereco
 
         this.pcNext = id_ex[1];
 
-
         if (jr) {
             this.jAddress = id_ex[2];
-        } else {
+        }
+        else {
             // 4 bits mais significativos de PC + 4
             let mostSig = id_ex[1] & 0b11110000000000000000000000000000;
             // 4 bits mais significativos de PC + 4 concatenados com o endereco do campo imediate da instrucao deslocado 2x para esquerda
@@ -175,7 +132,7 @@ function execute(half) { // execucao ou calculo de endereco
         }
 
         // Guarda os sinais de controle restantes para passar para etapa seguinte
-        this.memoryControls = id_ex[0]; //>>> 4;
+        this.memoryControls = id_ex[0];
 
         // Calcula valor de pc desvio: valor de proximo pc + (campo offset deslocado 2 para esquerda)
         this.branchAdress = id_ex[1] + (id_ex[4] << 2);
@@ -214,13 +171,10 @@ function execute(half) { // execucao ou calculo de endereco
         ex_mem[5] = this.rtValue;
         ex_mem[6] = this.writeAddress;
         ex_mem[7] = this.jAddress;
-        // console.log(ex_mem);
     }
 }
 
-function memory_read(half) { // acesso a memoria
-    // console.log("Memory read");
-
+function memoryRead(half) { // acesso a memoria
     if (half == FIRST_HALF) {
         let branch = control.getFromConcated('branch', ex_mem[0]);
         let bne = control.getFromConcated('bne', ex_mem[0]);
@@ -229,7 +183,7 @@ function memory_read(half) { // acesso a memoria
         let memRead = control.getFromConcated('memRead', ex_mem[0]);
         let memWrite = control.getFromConcated('memWrite', ex_mem[0]);
 
-        this.wbControls = ex_mem[0];// >>> 3;
+        this.wbControls = ex_mem[0];
 
         if (bne === 1)
             ex_mem[3] = !ex_mem[3];
@@ -241,7 +195,7 @@ function memory_read(half) { // acesso a memoria
             this.branchAddress = ex_mem[7];
         }
         else {
-            this.branchAddress = ex_mem[2]; //
+            this.branchAddress = ex_mem[2];
         }
 
         // data_memory guarda words, entao precisa dividir o endereco por 4
@@ -276,39 +230,21 @@ function memory_read(half) { // acesso a memoria
         if (this.PCSrc) {
             pc = this.branchAddress;
         }
-
-        // console.log(mem_wb);
     }
 }
 
-function write_back(half) { // escrita do resultado
-    // console.log("Write back")
-
+function writeBack(half) { // escrita do resultado
     if (half == FIRST_HALF) {
-        // this.regWrite = mem_wb[0] & 0b1;
-        // this.memToReg = (mem_wb[0] >>> 1) & 0b1;
-
         this.regWrite = control.getFromConcated('regWrite', mem_wb[0]);
         this.memToReg = control.getFromConcated('memToReg', mem_wb[0]);
 
         this.value = this.memToReg === 1 ? mem_wb[1] : mem_wb[2];
         this.dst = mem_wb[3];
-
-        // console.log({
-        //     dst: this.dst,
-        //     value: this.value
-        // })
     }
     else if (half == SECOND_HALF) {
-        if (this.regWrite === 1)
+        if (this.regWrite === 1) {
             registers[this.dst] = this.value;
-
-        // registers[mem_wb[1]] = mem_wb[0]; // escreve no registrador guardade em mem_wb[1] o valor lido da memoria guardado em mem_wb[0]
-        // console.log({
-        //     register: registers[this.dst]
-        // })
-
-        // updateUI();
+        }
     }
 }
 

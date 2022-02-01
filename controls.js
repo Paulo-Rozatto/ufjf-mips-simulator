@@ -23,58 +23,49 @@ class Control {
         // pega os 6 primeiros bits da instrucao
         let opcode = instruction >>> 26;
         let funct = instruction & 0b0111111;
-        // console.log(opcode.toString(2))
 
         switch (opcode) {
-            case 0: {
-                console.log('R-type')
+            case 0: { // Tipo R
                 this._setRTypeState()
 
-                if (funct == 0b0) {
+                if (funct == 0b0) { // shift left logical
                     this.shft = 1;
                 }
-                if (funct == 0b001000) {
+                if (funct == 0b001000) { // Jump register
                     this.jr = 1;
                     this.jump = 1;
                     this.regWrite = 0;
                 }
                 break;
             }
-            case 2: {
-                console.log('j');
+            case 2: { // Jump
                 this._setJumpState()
                 break;
             }
-            case 3: {
-                console.log('jal');
+            case 3: { // Jump and Link
                 this._setJumpState();
                 this.link = 1;
                 this.regWrite = 1;
                 break;
             }
-            case 4: {
-                console.log('beq')
+            case 4: { // Branch equal
                 this._setBEQState();
                 break;
             }
-            case 5: {
-                console.log('ben');
+            case 5: { // Branch not equal
                 this._setBEQState();
                 this.bne = 1;
                 break;
             }
-            case 8: {
-                console.log('addi');
+            case 8: { // addi
                 this._setADDIState();
                 break;
             }
-            case 35: {
-                console.log('Load word')
+            case 35: { // Load word
                 this._setLWState();
                 break;
             }
-            case 43: {
-                console.log('Save word');
+            case 43: { // Save word
                 this._setSWState();
                 break;
             }
@@ -151,7 +142,6 @@ class Control {
 
     _setADDIState() {
         this.regDst = 0;
-        // this.opALU = 0b00;
         this.opALU1 = 0;
         this.opALU0 = 0;
         this.ALUSrc = 1;
@@ -169,7 +159,6 @@ class Control {
 
     _setLWState() {
         this.regDst = 0;
-        // this.opALU = 0b00;
         this.opALU1 = 0;
         this.opALU0 = 0;
         this.ALUSrc = 1;
@@ -187,7 +176,6 @@ class Control {
 
     _setSWState() {
         this.regDst = 0;
-        // this.opALU = 0b00;
         this.opALU1 = 0;
         this.opALU0 = 0;
         this.ALUSrc = 1;
@@ -205,7 +193,6 @@ class Control {
 
     _setBEQState() {
         this.regDst = 0;
-        // this.opALU = 0b01;
         this.opALU1 = 0;
         this.opALU0 = 1;
         this.ALUSrc = 0;
