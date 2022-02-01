@@ -4,8 +4,7 @@ class BinaryConverter {
     constructor() { }
 
     convert(instruction) {
-        if (typeof instruction === 'undefined' || instruction === 0) return `--`;
-        console.log(instruction)
+        if (typeof instruction === 'undefined' || instruction === 0) return `-`;
 
         let opcode, rs, rt, rd, shamt, imediate, funct, address;
 

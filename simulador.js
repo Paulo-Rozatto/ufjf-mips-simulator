@@ -28,31 +28,7 @@ const converter = new BinaryConverter();
 const execution_queue = ['-', '-', '-', '-', '-'];
 let lasWasJump = false;
 
-function loadFromTextArea() {
-    // Pega conteudo do text area, separa por quebra de linha e guarda num array
-    const text = document.getElementById("text-input").value.split('\n');
-
-    for (let instruction of text) {
-        // Desconsidera instrucoes com tamanho invalido
-        if (instruction.length < 32)
-            continue;
-
-        // passa a instrucao para inteiro levando em consideracao que esta escrita na base 2
-        instruction_memory.push(parseInt(instruction, 2) | 0);
-    }
-}
-
-document.getElementById('btn-load').addEventListener('click', () => {
-    loadFromTextArea();
-})
-
-updateUI();
-
-let cycleCont = 0;
 function cycle() {
-    cycleCont++;
-    // console.log('Ciclo ', cycleCont);
-
     instructionFetch(FIRST_HALF);
     instructionDecode(FIRST_HALF);
     execute(FIRST_HALF);
@@ -66,12 +42,10 @@ function cycle() {
     writeBack(SECOND_HALF);
 
     updateUI();
+
+    // Se o comando executado no estagio 4 for jump, apague da fila
     if (lasWasJump) execution_queue[3] = '-'
 }
-
-document.getElementById('btn-next').addEventListener('click', () => {
-    cycle();
-})
 
 function instructionFetch(half) { // Busca instrucao
     if (half === FIRST_HALF) { // primeira metada de ciclo apenas leitura
@@ -269,6 +243,73 @@ function writeBack(half) { // escrita do resultado
     }
 }
 
+// --- Comunicacao com a user interface --- //
+
+document.getElementById('btn-load').addEventListener('click', loadFromTextArea, false);
+document.getElementById('btn-run').addEventListener('click', run, false);
+document.getElementById('btn-next').addEventListener('click', cycle, false);
+document.getElementById('btn-reset').addEventListener('click', reset, false);
+
+function loadFromTextArea() {
+    // Pega conteudo do text area, separa por quebra de linha e guarda num array
+    const text = document.getElementById("text-input").value.split('\n');
+
+    for (let instruction of text) {
+        // Desconsidera instrucoes com tamanho invalido
+        if (instruction.length < 32)
+            continue;
+
+        // passa a instrucao para inteiro levando em consideracao que esta escrita na base 2
+        instruction_memory.push(parseInt(instruction, 2) | 0);
+    }
+
+    document.getElementById('btn-next').classList.remove('w3-disabled')
+    document.getElementById('btn-run').classList.remove('w3-disabled')
+}
+
+const delay = 300; // delay ao executar uma instrucao e outra
+let timeOut; // guarda a referecia do timeou para poder cancela-lo
+function run() {
+    cycle();
+
+    let i = 0;
+    let isComand = false;
+
+    while (isComand == false && i < 5) {
+        i++;
+        isComand = execution_queue[i] != '-';
+    }
+
+    if (isComand) {
+        timeOut = setTimeout(run, delay);
+    }
+    else {
+        clearTimeout(timeOut);
+    }
+}
+
+function reset() {
+    clearTimeout(timeOut);
+
+    resetArray(registers);
+    resetArray(if_id);
+    resetArray(id_ex);
+    resetArray(ex_mem);
+    resetArray(mem_wb);
+    resetArray(execution_queue, '-')
+
+    pc = 0 | 0;
+
+    updateUI();
+
+    function resetArray(array, value = 0) {
+        for (let i = 0; i < array.length; i++) {
+            array[i] = value;
+        }
+    }
+}
+
+
 function updateUI() {
     // Comandos
     document.getElementById('lbl-if').innerText = execution_queue[0];
@@ -336,6 +377,8 @@ function htmlWrite(id, value, additive) {
     else
         document.getElementById(id).innerHTML = text
 }
+
+updateUI();
 
 /**
  * Operadores bitwise (https://www.w3schools.com/js/js_bitwise.asp)
