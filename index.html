@@ -15,23 +15,26 @@
 
         #close {
             cursor: pointer;
+            padding: 2px;
         }
 
         #close:hover {
             background-color: #444 !important;
         }
 
-        #close:after {
-            position: absolute;
-            content: "";
-            border: 5px solid transparent;
-            border-color: transparent transparent #fff transparent;
-            top: 253px;
+        #close i {
+            border: solid white;
+            border-width: 0 3px 3px 0;
+            display: inline-block;
+            padding: 3px;
+
+            transform: rotate(-135deg);
+            -webkit-transform: rotate(-135deg);
         }
 
-        #close.hid:after {
-            border-color: #fff transparent transparent transparent;
-            top: 27px;
+        #close.hid i {
+            transform: rotate(45deg);
+            -webkit-transform: rotate(45deg);
         }
 
         #file-input {
@@ -85,6 +88,7 @@
         <div class="w3-cell-row w3-padding-8 w3-black">
             <div id="close" class="w3-cell w3-cell-middle w3-center" onclick="wrap();">
                 Esconder
+                <i></i>
             </div>
         </div>
     </section>
@@ -342,11 +346,11 @@
 
             if (wrapper.className.indexOf("none") == -1) {
                 wrapper.className += " none";
-                btn.innerText = "Mostrar"
+                btn.innerHTML = "Mostrar <i>"
                 btn.className += " hid";
             } else {
                 wrapper.className = wrapper.className.replace(" none", "");
-                btn.innerText = "Esconder"
+                btn.innerHTML = "Esconder <i>"
                 btn.className = btn.className.replace(" hid", "");
             }
         }
@@ -359,8 +363,8 @@
         fileInput.addEventListener('change', (e) => {
             const file = fileInput.files[0];
             const reader = new FileReader();
-            
-            reader.onload = function(event) {
+
+            reader.onload = function (event) {
                 const content = event.target.result;
                 textArea.innerHTML = content;
             }
@@ -368,8 +372,8 @@
             reader.readAsText(file);
         });
 
-         // Nao permite digitar nada alem de 0 e 1 na caixa de texto
-         textArea.addEventListener('keydown', (e) => {
+        // Nao permite digitar nada alem de 0 e 1 na caixa de texto
+        textArea.addEventListener('keydown', (e) => {
             switch (e.key) {
                 case '0':
                 case '1':
