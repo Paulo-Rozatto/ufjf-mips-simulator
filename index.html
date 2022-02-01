@@ -1,78 +1,57 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-br">
 
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mips Simulator</title>
-
+    <link rel="stylesheet" href="css/w3.css">
     <style>
         html,
         body {
             margin: 0 auto;
-            overflow-x: hidden;
         }
 
-        .container {
-            /* display: block; */
-            width: 100vw;
-            padding: 1rem;
-            background-color: beige;
+        #close {
+            cursor: pointer;
         }
 
-        .center {
-            /* display: block; */
-            margin: auto;
-            width: fit-content;
+        #close:hover {
+            background-color: #444 !important;
         }
 
-        .col {
-            display: inline-block;
+        #close:after {
+            position: absolute;
+            content: "";
+            border: 5px solid transparent;
+            border-color: transparent transparent #fff transparent;
+            top: 253px;
         }
 
-        .top {
-            vertical-align: top;
+        #close.hid:after {
+            border-color: #fff transparent transparent transparent;
+            top: 27px;
         }
 
-        .row {
-            display: block;
-            width: 100%;
-            height: fit-content;
+        #btn-input {
+            position: absolute;
+            opacity: 0;
+            z-index: -1;
         }
 
-        .register-name {
-            width: 20%;
-            min-width: fit-content;
-            padding: 1% 0% 1% 3%;
-            border: 1px solid black;
-            overflow-x: auto;
-            vertical-align: top;
-            height: auto;
-        }
-
-        .register-value {
-            width: 70%;
-            min-width: fit-content;
-            padding: 1% 0% 1% 3%;
-            border: 1px solid black;
-            overflow-x: auto;
-            /* margin-bottom: 1%; */
+        .none {
+            display: none;
         }
     </style>
 </head>
 
 <body>
-    <div id="input-area" class="container">
-        <h3>Carregar Arquivo</h3>
-        <label for="file-input">Escolha o arquivo binario: </label>
-        <input id="file-input" type="file">
-
-        <br><br>
-
-        <label for="text-input">Ou insira o codigo aqui:</label>
-        <textarea name="Entrada" id="text-input" cols="32" rows="10"
-            placeholder="Entrada alternativa do codigo binario..." style="display: block;">
+    <section>
+        <div class="w3-cell-row w3-padding w3-gray">
+            <div id="hide" class="w3-container w3-cell w3-cell-middle w3-center">
+                <h5 class="w3-center">Entrada do codigo</h5>
+                <textarea id="text-input" cols="40" rows="5">
 00001100000000000000000000000010
 00001000000000000000000000000010
 00100000000010100000000011111111
@@ -90,187 +69,286 @@
 00000001010010110100000000100010
 00000001010010110100100000100100
 00000001100011010111000000100101
-        </textarea>
+                </textarea><br>
 
-    </div>
-    <hr>
+                <input type="file" name="btn-input" id="btn-input" class="w3-button w3-black" style="font-size: 0.8em;">
 
-    <div class="container">
-        <div class="center">
-            <button id="btn-next" onclick="cycle()">Proximo passo</button>
-            <span id="status"></span>
-        </div>
-    </div>
-
-    <hr>
-
-    <div class="container">
-        <div style="width: 27.5%; background-color: aliceblue;" class="col top">
-            <div class="row">
-                <hr>
-                <span class="col register-name">$pc</span>
-                <span id="pc" class="col register-value"></span>
-                <hr>
-            </div>
-
-            <div class="row">
-                <h3 class="center">Banco de Registradores</h3>
-            </div>
-
-            <div class="row" style="padding-top: 1%;">
-
-                <hr>
-                <!-- <span class="col register-name">$pc</span>
-                <span id="pc" class="col register-value"></span>
-                <hr> -->
-
-                <span class="col register-name">$zero</span>
-                <span class="col register-value">00000000000000000000000000000000</span>
-
-                <span class="col register-name">$at</span>
-                <span id="at" class="col register-value">Reservado para o assembler</span>
-
-                <span class="col register-name">$v0</span>
-                <span id="v0" class="col register-value"></span>
-
-                <span class="col register-name">$v1</span>
-                <span id="v1" class="col register-value"></span>
-
-                <span class="col register-name">$a0</span>
-                <span id="a0" class="col register-value"></span>
-
-                <span class="col register-name">$a1</span>
-                <span id="a1" class="col register-value"></span>
-
-                <span class="col register-name">$a2</span>
-                <span id="a2" class="col register-value"></span>
-
-                <span class="col register-name">$a3</span>
-                <span id="a3" class="col register-value"></span>
-
-                <span class="col register-name">$t0</span>
-                <span id="t0" class="col register-value"></span>
-
-                <span class="col register-name">$t1</span>
-                <span id="t1" class="col register-value"></span>
-
-                <span class="col register-name">$t2</span>
-                <span id="t2" class="col register-value"></span>
-
-                <span class="col register-name">$t3</span>
-                <span id="t3" class="col register-value"></span>
-
-                <span class="col register-name">$t4</span>
-                <span id="t4" class="col register-value"></span>
-
-                <span class="col register-name">$t5</span>
-                <span id="t5" class="col register-value"></span>
-
-                <span class="col register-name">$t6</span>
-                <span id="t6" class="col register-value"></span>
-
-                <span class="col register-name">$t7</span>
-                <span id="t7" class="col register-value"></span>
-
-                <span class="col register-name">$r0</span>
-                <span id="r0" class="col register-value"></span>
-
-                <span class="col register-name">$r1</span>
-                <span id="r1" class="col register-value"></span>
-
-                <span class="col register-name">$r2</span>
-                <span id="r2" class="col register-value"></span>
-
-                <span class="col register-name">$r3</span>
-                <span id="r3" class="col register-value"></span>
-
-                <span class="col register-name">$r4</span>
-                <span id="r4" class="col register-value"></span>
-
-                <span class="col register-name">$r5</span>
-                <span id="r5" class="col register-value"></span>
-
-                <span class="col register-name">$r6</span>
-                <span id="r6" class="col register-value"></span>
-
-                <span class="col register-name">$r7</span>
-                <span id="r7" class="col register-value"></span>
-
-                <span class="col register-name">$t8</span>
-                <span id="t8" class="col register-value"></span>
-
-                <span class="col register-name">$t9</span>
-                <span id="t9" class="col register-value"></span>
-
-                <span class="col register-name">$k0</span>
-                <span id="k0" class="col register-value">Reservado pelo Sisema Operacional</span>
-
-                <span class="col register-name">$k1</span>
-                <span id="k1" class="col register-value">Reservado pelo Sisema Operacional</span>
-
-                <span class="col register-name">$gp</span>
-                <span id="gp" class="col register-value"></span>
-
-                <span class="col register-name">$sp</span>
-                <span id="sp" class="col register-value"></span>
-
-                <span class="col register-name">$fp</span>
-                <span id="fp" class="col register-value"></span>
-
-                <span class="col register-name">$ra</span>
-                <span id="ra" class="col register-value"></span>
+                <div class="w3-bar w3-center" style="margin-top: 1em;">
+                    <label class="w3-button w3-black" for="btn-input">Abrir arquivo...</label>
+                    <button id="btn-load" class="w3-button w3-red">Carregar para memoria</button>
+                </div>
             </div>
         </div>
 
-        <div style="width: 30%; background-color: azure;" class="col top">
-            <div class="row">
-                <h3 class="center">Registradores Pipeline</h3>
-            </div>
-            <hr>
-
-            <div class="row" style="padding-top: 1%;">
-                <span class="col register-name">IF/ID</span>
-                <span id="if-id" class="col register-value"></span>
-            </div>
-
-            <div class="row" style="padding-top: 1%;">
-                <span class="col register-name">ID/EX</span>
-                <span id="id-ex" class="col register-value"></span>
-            </div>
-
-            <div class="row" style="padding-top: 1%;">
-                <span class="col register-name">EX/MEM</span>
-                <span id="ex-mem" class="col register-value"></span>
-            </div>
-
-            <div class="row" style="padding-top: 1%;">
-                <span class="col register-name">MEM/WB</span>
-                <span id="mem-wb" class="col register-value"></span>
+        <div class="w3-cell-row w3-padding-8 w3-black">
+            <div id="close" class="w3-cell w3-cell-middle w3-center" onclick="wrap();">
+                Esconder
             </div>
         </div>
-    </div>
+    </section>
 
+    <section>
+        <div class="w3-cell-row w3-padding w3-gray">
+            <div class="w3-container w3-cell w3-cell-middle">
+                <table class="w3-table w3-stripped w3-bordered  w3-border w3-small">
+                    <tr>
+                        <th>Registrador</th>
+                        <th>Valor</th>
+                    </tr>
+                    <tr>
+                        <td>$zero</td>
+                        <td>00000000000000000000000000000000</td>
+                    </tr>
+
+                    <tr>
+                        <td>$at</td>
+                        <td>Reservado</td>
+                    </tr>
+
+                    <tr>
+                        <td>$v0</td>
+                        <td id="v0">00000000000000000000000000000000</td>
+                    </tr>
+
+                    <tr>
+                        <td>$v1</td>
+                        <td id="v1">00000000000000000000000000000000</td>
+                    </tr>
+
+                    <tr>
+                        <td>$a0</td>
+                        <td id="a0">00000000000000000000000000000000</td>
+                    </tr>
+
+                    <tr>
+                        <td>$a1</td>
+                        <td id="a1">00000000000000000000000000000000</td>
+                    </tr>
+
+                    <tr>
+                        <td>$a2</td>
+                        <td id="a2">00000000000000000000000000000000</td>
+                    </tr>
+
+                    <tr>
+                        <td>$a3</td>
+                        <td id="a3">00000000000000000000000000000000</td>
+                    </tr>
+
+                    <tr>
+                        <td>$t0</td>
+                        <td id="t0">00000000000000000000000000000000</td>
+                    </tr>
+
+                    <tr>
+                        <td>$t1</td>
+                        <td id="t1">00000000000000000000000000000000</td>
+                    </tr>
+
+                    <tr>
+                        <td>$t2</td>
+                        <td id="t2">00000000000000000000000000000000</td>
+                    </tr>
+
+                    <tr>
+                        <td>$t3</td>
+                        <td id="t3">00000000000000000000000000000000</td>
+                    </tr>
+
+                    <tr>
+                        <td>$t4</td>
+                        <td id="t4">00000000000000000000000000000000</td>
+                    </tr>
+
+                    <tr>
+                        <td>$t5</td>
+                        <td id="t5">00000000000000000000000000000000</td>
+                    </tr>
+
+                    <tr>
+                        <td>$t6</td>
+                        <td id="t6">00000000000000000000000000000000</td>
+                    </tr>
+
+                    <tr>
+                        <td>$t7</td>
+                        <td id="t7">00000000000000000000000000000000</td>
+                    </tr>
+
+                    <tr>
+                        <td>$r0</td>
+                        <td id="r0">00000000000000000000000000000000</td>
+                    </tr>
+
+                    <tr>
+                        <td>$r1</td>
+                        <td id="r1">00000000000000000000000000000000</td>
+                    </tr>
+
+                    <tr>
+                        <td>$r2</td>
+                        <td id="r2">00000000000000000000000000000000</td>
+                    </tr>
+
+                    <tr>
+                        <td>$r3</td>
+                        <td id="r3">00000000000000000000000000000000</td>
+                    </tr>
+
+                    <tr>
+                        <td>$r4</td>
+                        <td id="r4">00000000000000000000000000000000</td>
+                    </tr>
+
+                    <tr>
+                        <td>$r5</td>
+                        <td id="r5">00000000000000000000000000000000</td>
+                    </tr>
+
+                    <tr>
+                        <td>$r6</td>
+                        <td id="r6">00000000000000000000000000000000</td>
+                    </tr>
+
+                    <tr>
+                        <td>$r7</td>
+                        <td id="r7">00000000000000000000000000000000</td>
+                    </tr>
+
+                    <tr>
+                        <td>$t8</td>
+                        <td id="t8">00000000000000000000000000000000</td>
+                    </tr>
+
+                    <tr>
+                        <td>$t9</td>
+                        <td id="t9">00000000000000000000000000000000</td>
+                    </tr>
+
+                    <tr>
+                        <td>$k0</td>
+                        <td id="k0">Reservado pelo S.O</td>
+                    </tr>
+
+                    <tr>
+                        <td>$k1</td>
+                        <td id="k1">Reservado pelo S.O</td>
+                    </tr>
+
+                    <tr>
+                        <td>$gp</td>
+                        <td id="gp">00000000000000000000000000000000</td>
+                    </tr>
+
+                    <tr>
+                        <td>$sp</td>
+                        <td id="sp">00000000000000000000000000000000</td>
+                    </tr>
+
+                    <tr>
+                        <td>$fp</td>
+                        <td id="fp">00000000000000000000000000000000</td>
+                    </tr>
+
+                    <tr>
+                        <td>$ra</td>
+                        <td id="ra">00000000000000000000000000000000</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="w3-container w3-cell w3-cell-top">
+
+                <table class="w3-table w3-stripped w3-bordered">
+                    <tr></tr>
+                    <tr>
+                        <td>$pc</td>
+                        <td id="pc">00000000000000000000000000000000</td>
+                    </tr>
+                </table>
+
+                <br>
+                <table class="w3-table w3-stripped w3-bordered">
+                    <tr>
+                        <th>Estagio</th>
+                        <th>Comando</th>
+                    </tr>
+                    <tr>
+                        <td>Instruction Fetch</td>
+                        <td id="lbl-if"></td>
+                    </tr>
+                    <tr>
+                        <td>Instruction Decode</td>
+                        <td id="lbl-id"></td>
+                    </tr>
+                    <tr>
+                        <td>Execute</td>
+                        <td id="lbl-iexc"></td>
+                    </tr>
+                    <tr>
+                        <td>Memory Read</td>
+                        <td id="lbl-if"></td>
+                    </tr>
+                    <tr>
+                        <td>Write back</td>
+                        <td id="lbl-if"></td>
+                    </tr>
+                </table>
+
+                <div class="w3-bar w3-center" style="margin-top: 1em;">
+                    <button class="w3-button w3-black">Rodar</button>
+                    <button id="btn-next" class="w3-button w3-teal">Proximo passo</button>
+                    <button class="w3-button w3-red">Reset</button>
+                </div>
+            </div>
+
+            <div class="w3-container w3-cell w3-cell-top">
+                <table class="w3-table w3-stripped w3-bordered w3-border w3-small">
+                    <tr>
+                        <th>Registrador</th>
+                        <th>Valor</th>
+                    </tr>
+                    <tr>
+                        <td>IF/ID</td>
+                        <td id="if-id">00000000000000000000000000000000</td>
+                    </tr>
+
+                    <tr>
+                        <td>ID/EX</td>
+                        <td id="id-ex"></td>
+                    </tr>
+
+                    <tr>
+                        <td>EX/MEM</td>
+                        <td id="ex-mem"></td>
+                    </tr>
+
+                    <tr>
+                        <td>MEM/WB</td>
+                        <td id="mem-wb"></td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </section>
 
     <script>
-        // Nao permite digitar nada alem de 0 e 1 na caixa de texto
-        document.getElementById("text-input").addEventListener('keydown', (e) => {
-            switch (e.key) {
-                case '0':
-                case '1':
-                case 'Enter':
-                case 'Backspace':
-                case 'ArrowUp':
-                case 'ArrowDown':
-                case 'ArrowLeft':
-                case 'ArrowRight':
-                    break;
+        function wrap() {
+            let wrapper = document.getElementById('hide');
+            let btn = document.getElementById('close');
+            console.log('po')
 
-                default:
-                    e.preventDefault();
+            if (wrapper.className.indexOf("none") == -1) {
+                wrapper.className += " none";
+                btn.innerText = "Mostrar"
+                btn.className += " hid";
+            } else {
+                wrapper.className = wrapper.className.replace(" none", "");
+                btn.innerText = "Esconder"
+                btn.className = btn.className.replace(" hid", "");
             }
-        }, false);
+        }
     </script>
-
     <script src="alu.js"></script>
     <script src="controls.js"></script>
     <script src="simulador.js"></script>

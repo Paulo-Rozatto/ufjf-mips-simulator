@@ -36,7 +36,10 @@ function loadFromTextArea() {
         instruction_memory.push(parseInt(instruction, 2) | 0);
     }
 }
-loadFromTextArea();
+
+document.getElementById('btn-load').addEventListener('click', () => {
+    loadFromTextArea();
+})
 
 updateUI();
 
@@ -45,7 +48,7 @@ function cycle() {
     cycleCont++;
     console.log('Ciclo ', cycleCont);
 
-    document.getElementById("status").innerText = `Ciclo: ${cycleCont}`
+    // document.getElementById("status").innerText = `Ciclo: ${cycleCont}`
 
     instructionFetch(FIRST_HALF);
     instructionDecode(FIRST_HALF);
@@ -61,6 +64,10 @@ function cycle() {
 
     updateUI();
 }
+
+document.getElementById('btn-next').addEventListener('click', () => {
+    cycle();
+})
 
 function instructionFetch(half) { // Busca instrucao
     if (half === FIRST_HALF) { // primeira metada de ciclo apenas leitura
@@ -302,7 +309,6 @@ function htmlWrite(id, value, additive) {
 
     // - O pad start preenche a string com o caractere informado ate que ela tenha o tamanho do informado
     //   So sera preciso o padStart em numeros positivos, entao pode-se preencher com zeros apenas
-
     let text = (value >>> 0).toString(2).padStart(32, '0');
     if (additive)
         document.getElementById(id).innerHTML += '<br>' + text;
