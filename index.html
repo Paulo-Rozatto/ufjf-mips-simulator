@@ -46,13 +46,14 @@
         .none {
             display: none;
         }
+
     </style>
 </head>
 
 <body>
     <section>
-        <div class="w3-cell-row w3-padding w3-gray">
-            <div id="hide" class="w3-container w3-cell w3-cell-middle w3-center">
+        <div id="hide" class="w3-cell-row w3-padding w3-gray">
+            <div class="w3-container w3-cell w3-cell-middle w3-center">
                 <h5 class="w3-center">Entrada do codigo</h5>
                 <textarea id="text-input" cols="32" rows="5">
 00001100000000000000000000000010
@@ -81,6 +82,17 @@
                         style="font-size: 0.8em;">
 
                     <button id="btn-load" class="w3-button w3-red">Carregar para memoria</button>
+                </div>
+            </div>
+
+            <div class="w3-container w3-cell w3-cell-right w3-center">
+                <h5 class="w3-center">Saida</h5>
+                <textarea id="text-output" cols="40" rows="5" readonly>
+                </textarea>
+                <br>
+
+                <div class="w3-bar w3-center" style="margin-top: 1em;">
+                    <a id="btn-download" class="w3-button w3-red">Salvar arquivo</a>
                 </div>
             </div>
         </div>
@@ -267,6 +279,10 @@
 
                 <table class="w3-table w3-stripped w3-bordered">
                     <tr></tr>
+                    <tr>
+                        <td>ciclo</td>
+                        <td id="cycle">0</td>
+                    </tr>
                     <tr>
                         <td>$pc</td>
                         <td id="pc">00000000000000000000000000000000</td>

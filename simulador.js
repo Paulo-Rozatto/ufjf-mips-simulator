@@ -15,7 +15,7 @@ const instruction_memory = [];
 const data_memory = new Int32Array(new ArrayBuffer(512));
 
 // Registradores do pipeline sendo alocados por quantidade de bytes
-const if_id = new Int32Array(new ArrayBuffer(12)); // 3 posicoes
+const if_id = new Int32Array(new ArrayBuffer(8)); // 2 posicoes
 const id_ex = new Int32Array(new ArrayBuffer(36)); // 9 posicoes
 const ex_mem = new Int32Array(new ArrayBuffer(32)); // 8 posicoes
 const mem_wb = new Int32Array(new ArrayBuffer(16)); // 4 posicoes
@@ -26,9 +26,17 @@ const alu = new ALU();
 // Auxiliadores para mostrar qual comando esta sendo executado em assembly
 const converter = new BinaryConverter();
 const execution_queue = ['-', '-', '-', '-', '-'];
+const binary_queue = ['', '', '', '', '']
 let lasWasJump = false;
 
+// String de saida
+let output = "";
+
+let cycleCount = 0;
 function cycle() {
+    cycleCount++;
+    output += `Ciclo ${cycleCount}\n` + `PC: ${pc}\n`;
+
     instructionFetch(FIRST_HALF);
     instructionDecode(FIRST_HALF);
     execute(FIRST_HALF);
@@ -41,10 +49,37 @@ function cycle() {
     memoryRead(SECOND_HALF);
     writeBack(SECOND_HALF);
 
+    output += "\n";
+    output += "--------------------------------------------------------------"
+    output += "\n";
     updateUI();
 
     // Se o comando executado no estagio 4 for jump, apague da fila
-    if (lasWasJump) execution_queue[3] = '-'
+    if (lasWasJump) {
+        execution_queue[3] = '-';
+        binary_queue[3] = 0;
+    }
+}
+
+function writeInOutput(name, instruction, binary, controls, regName, reg) {
+    output += name + "\n";
+    output += "\t- Instrução: " + instruction + "\n";
+    output += "\t- Instrução em binario: " + toBin(binary) + "\n"
+
+    output += "\t- Sinais de controle:" + "\n";
+    for (let ctr in controls) {
+        output += "\t\t- " + ctr + ": " + controls[ctr] + "\n";
+    }
+
+    output += "\t- " + regName + ":\n"
+    if (reg.length > 0)
+        for (let n of reg) {
+            output += "\t\t- " + toBin(n) + "\n";
+        }
+
+    function toBin(x) {
+        return (x >>> 0).toString(2).padStart(32, '0');
+    }
 }
 
 function instructionFetch(half) { // Busca instrucao
@@ -55,7 +90,8 @@ function instructionFetch(half) { // Busca instrucao
 
         // para exibir na interface
         let convertedInstruction = converter.convert(this.instruction);
-        execution_queue.unshift(convertedInstruction)
+        execution_queue.unshift(convertedInstruction);
+        binary_queue.unshift(this.instruction);
     }
     else if (half == SECOND_HALF) {
         if_id[0] = this.instruction;
@@ -63,6 +99,7 @@ function instructionFetch(half) { // Busca instrucao
 
         pc = this.pcIncremented;
         htmlWrite('pc', pc);
+        writeInOutput("Instruction Fetch", execution_queue[0], binary_queue[0], null, "IF/ID", if_id);
     }
 }
 
@@ -93,6 +130,8 @@ function instructionDecode(half) { // Decodifica instrucoes
         id_ex[6] = this.rt; // salva endereco para escrever load word
         id_ex[7] = this.rd;
         id_ex[8] = this.jumpAddress;
+
+        writeInOutput("Instruction Decode", execution_queue[1], binary_queue[1], null, "ID/EX", id_ex);
     }
 }
 
@@ -148,6 +187,9 @@ function execute(half) { // execucao ou calculo de endereco
 
         // Escolhe entre endercos de rt e rd para decidir qual o registrador escrito
         this.writeAddress = regDst === 0 ? id_ex[6] : id_ex[7];
+
+        // Salva sinais de controle em objeto para exibir no arquivo de saida
+        this.exControls = { regDst, op1, op0, aluSrc, shift, jr, opAlu }
     }
     else if (half == SECOND_HALF) {
         ex_mem[0] = this.memoryControls;
@@ -158,6 +200,8 @@ function execute(half) { // execucao ou calculo de endereco
         ex_mem[5] = this.rtValue;
         ex_mem[6] = this.writeAddress;
         ex_mem[7] = this.jAddress;
+
+        writeInOutput("Execute", execution_queue[2], binary_queue[2], this.exControls, "EX/MEM", ex_mem);
     }
 }
 
@@ -211,6 +255,9 @@ function memoryRead(half) { // acesso a memoria
         // avisa a proxima funcao para remover o jum da fila
         lasWasJump = (jump === 1 && link === 0) || branch || bne;
 
+        // Salva sinais de controle em objeto para exibir no arquivo de saida
+        this.memControls = { branch, bne, jump, link, memRead, memWrite };
+
     }
     else if (half == SECOND_HALF) {
         mem_wb[0] = this.wbControls;
@@ -222,6 +269,7 @@ function memoryRead(half) { // acesso a memoria
             pc = this.branchAddress;
         }
 
+        writeInOutput("Memory Read", execution_queue[3], binary_queue[3], this.memControls, "MEM/WB", mem_wb);
     }
 }
 
@@ -232,6 +280,9 @@ function writeBack(half) { // escrita do resultado
 
         this.value = this.memToReg === 1 ? mem_wb[1] : mem_wb[2];
         this.dst = mem_wb[3];
+
+        // Salva sinais de controle em objeto para exibir no arquivo de saida
+        this.wbControl = { regWrite: this.regWrite, memToReg: this.memToReg }
     }
     else if (half == SECOND_HALF) {
         if (this.regWrite === 1) {
@@ -240,6 +291,10 @@ function writeBack(half) { // escrita do resultado
 
         // remove ultimo elemento ja que acabou sua execucao
         execution_queue.pop();
+        binary_queue.pop();
+
+
+        writeInOutput("Write Back", execution_queue[4], binary_queue[4], this.wbControl, "Nao tem registrador", []);
     }
 }
 
@@ -249,6 +304,7 @@ document.getElementById('btn-load').addEventListener('click', loadFromTextArea, 
 document.getElementById('btn-run').addEventListener('click', run, false);
 document.getElementById('btn-next').addEventListener('click', cycle, false);
 document.getElementById('btn-reset').addEventListener('click', reset, false);
+document.getElementById('btn-download').addEventListener('click', dowloadFile, false)
 
 function loadFromTextArea() {
     // Pega conteudo do text area, separa por quebra de linha e guarda num array
@@ -299,6 +355,9 @@ function reset() {
     resetArray(execution_queue, '-')
 
     pc = 0 | 0;
+    cycleCount = 0;
+    output = "";
+
 
     updateUI();
 
@@ -309,6 +368,12 @@ function reset() {
     }
 }
 
+function dowloadFile(e) {
+    let blob = new Blob([output], {type: 'text/plain'});
+    e.target.download = "log-simulador.txt";
+    e.target.href = window.URL.createObjectURL(blob);
+}
+
 
 function updateUI() {
     // Comandos
@@ -317,6 +382,12 @@ function updateUI() {
     document.getElementById('lbl-exec').innerText = execution_queue[2];
     document.getElementById('lbl-mem').innerText = execution_queue[3];
     document.getElementById('lbl-wb').innerText = execution_queue[4];
+
+    // contador de cyclo
+    document.getElementById('cycle').innerHTML = `${cycleCount}`;
+
+    // Text area de saida
+    document.getElementById('text-output').value = output;
 
     // PC
     htmlWrite('pc', pc);
