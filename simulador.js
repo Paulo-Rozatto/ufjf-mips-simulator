@@ -23,6 +23,11 @@ const mem_wb = new Int32Array(new ArrayBuffer(16)); // 4 posicoes
 const control = new Control();
 const alu = new ALU();
 
+// Auxiliadores para mostrar qual comando esta sendo executado em assembly
+const converter = new BinaryConverter();
+const execution_queue = ['-', '-', '-', '-', '-'];
+let lasWasJump = false;
+
 function loadFromTextArea() {
     // Pega conteudo do text area, separa por quebra de linha e guarda num array
     const text = document.getElementById("text-input").value.split('\n');
@@ -46,9 +51,7 @@ updateUI();
 let cycleCont = 0;
 function cycle() {
     cycleCont++;
-    console.log('Ciclo ', cycleCont);
-
-    // document.getElementById("status").innerText = `Ciclo: ${cycleCont}`
+    // console.log('Ciclo ', cycleCont);
 
     instructionFetch(FIRST_HALF);
     instructionDecode(FIRST_HALF);
@@ -63,6 +66,7 @@ function cycle() {
     writeBack(SECOND_HALF);
 
     updateUI();
+    if (lasWasJump) execution_queue[3] = '-'
 }
 
 document.getElementById('btn-next').addEventListener('click', () => {
@@ -74,6 +78,10 @@ function instructionFetch(half) { // Busca instrucao
 
         this.instruction = instruction_memory[pc / 4]; // o array aloca 1 byte em cada posicao e o pc esta em bytes
         this.pcIncremented = pc + 4;
+
+        // para exibir na interface
+        let convertedInstruction = converter.convert(this.instruction);
+        execution_queue.unshift(convertedInstruction)
     }
     else if (half == SECOND_HALF) {
         if_id[0] = this.instruction;
@@ -115,8 +123,6 @@ function instructionDecode(half) { // Decodifica instrucoes
 }
 
 function execute(half) { // execucao ou calculo de endereco
-    // console.log("Execute")
-
     if (half == FIRST_HALF) {
         let regDst = control.getFromConcated('regDst', id_ex[0]);
         let op1 = control.getFromConcated('opALU1', id_ex[0]);
@@ -226,6 +232,11 @@ function memoryRead(half) { // acesso a memoria
             this.regAddress = ex_mem[6];
         }
 
+        // auxiliar para exibicao na interface com o usuaio
+        // se a instrucao e jump que nao e jal, a execucao dela termina aqui
+        // avisa a proxima funcao para remover o jum da fila
+        lasWasJump = (jump === 1 && link === 0) || branch || bne;
+
     }
     else if (half == SECOND_HALF) {
         mem_wb[0] = this.wbControls;
@@ -233,10 +244,10 @@ function memoryRead(half) { // acesso a memoria
         mem_wb[2] = this.writeValue;
         mem_wb[3] = this.regAddress;
 
-        // Talvez simplemente sobreescrever assim nao funcione, precisa testar
         if (this.PCSrc) {
             pc = this.branchAddress;
         }
+
     }
 }
 
@@ -252,10 +263,20 @@ function writeBack(half) { // escrita do resultado
         if (this.regWrite === 1) {
             registers[this.dst] = this.value;
         }
+
+        // remove ultimo elemento ja que acabou sua execucao
+        execution_queue.pop();
     }
 }
 
 function updateUI() {
+    // Comandos
+    document.getElementById('lbl-if').innerText = execution_queue[0];
+    document.getElementById('lbl-id').innerText = execution_queue[1];
+    document.getElementById('lbl-exec').innerText = execution_queue[2];
+    document.getElementById('lbl-mem').innerText = execution_queue[3];
+    document.getElementById('lbl-wb').innerText = execution_queue[4];
+
     // PC
     htmlWrite('pc', pc);
 
