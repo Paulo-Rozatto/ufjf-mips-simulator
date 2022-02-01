@@ -17,6 +17,10 @@ class BinaryConverter {
         imediate = instruction & 0b1111111111111111; // [15 - 0]
         address = instruction & 0b00000011111111111111111111111111;
 
+        rs = this._numberToName(rs);
+        rt = this._numberToName(rt);
+        rd = this._numberToName(rd);
+
         switch (opcode) {
             case 0: { // Tipo R
                 return this._getRType(rs, rt, rd, shamt, funct)
@@ -41,7 +45,7 @@ class BinaryConverter {
                 return `lw ${rt} ${rs} 0x${imediate.toString(16)}`
             }
             case 43: { // Save word
-                return `lw ${rt} ${rs} 0x${imediate.toString(16)}`
+                return `sw ${rt} ${rs} 0x${imediate.toString(16)}`
             }
 
             default: {
@@ -73,6 +77,75 @@ class BinaryConverter {
             case 0b001000: { // jr
                 return `jr ${rs}`;
             }
+        }
+    }
+
+    _numberToName(register) {
+        switch (register) {
+            case 0:
+                return '$zero';
+            case 1:
+                return '$at';
+            case 2:
+                return '$v0';
+            case 3:
+                return '$v1';
+            case 4:
+                return '$a0';
+            case 5:
+                return '$a1';
+            case 6:
+                return '$a2';
+            case 7:
+                return '$a3';
+            case 8:
+                return '$t0';
+            case 9:
+                return '$t1';
+            case 10:
+                return '$t2';
+            case 11:
+                return '$t3';
+            case 12:
+                return '$t4';
+            case 13:
+                return '$t5';
+            case 14:
+                return '$t6';
+            case 15:
+                return '$t7';
+            case 16:
+                return '$r0';
+            case 17:
+                return '$r1';
+            case 18:
+                return '$r2';
+            case 19:
+                return '$r3';
+            case 20:
+                return '$r4';
+            case 21:
+                return '$r5';
+            case 22:
+                return '$r6';
+            case 23:
+                return '$r7';
+            case 24:
+                return '$t8';
+            case 25:
+                return '$t9';
+            case 26:
+                return '$k0';
+            case 27:
+                return '$k1';
+            case 28:
+                return '$gp';
+            case 20:
+                return '$sp';
+            case 30:
+                return '$fp';
+            case 31:
+                return '$ra';
         }
     }
 }

@@ -267,7 +267,7 @@ function loadFromTextArea() {
     document.getElementById('btn-run').classList.remove('w3-disabled')
 }
 
-const delay = 300; // delay ao executar uma instrucao e outra
+const delay = 900; // delay ao executar uma instrucao e outra
 let timeOut; // guarda a referecia do timeou para poder cancela-lo
 function run() {
     cycle();
