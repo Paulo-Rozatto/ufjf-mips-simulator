@@ -1,3 +1,5 @@
+// Classe que executa as operacoes da ALU e tambem gera sinais de controle da ALU
+
 class ALU {
     constructor() { }
 

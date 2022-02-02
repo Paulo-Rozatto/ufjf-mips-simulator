@@ -1,4 +1,8 @@
+// Classe que gera os sinais de controle
+
 class Control {
+    // Como durante o desenvolvimento os sinais foram progressivamente adcionados
+    // Foi criado a lista abaixo para automatizar o processo de insercao e busca dos sinais de controle
     #signalList = ["memToReg", "regWrite", "memWrite", "memRead", "branch", "bne", "jump", "link", "jr", "shft", "ALUSrc", "opALU1", "opALU0", "regDst"];
 
     constructor() {
@@ -88,6 +92,9 @@ class Control {
         }
     }
 
+    // Concatena todos sinais de controle como se fosse um numero
+    // Para facilitar a implementacao, esse sinal de controle unificado e passado adiante entre os estagios do pipeline
+    // Apesar de nao ser muito fiel ao que acontece na pratica
     getConcatedState() {
         let concat = 0b0, test;
         for (let i = 0; i < this.#signalList.length; i++) {
@@ -98,6 +105,7 @@ class Control {
         return concat;
     }
 
+    // Pega o sinal de controle do numero concatenado dadi o nome do sinal
     getFromConcated(signal, concated) {
         let shift = (this.#signalList.length - this.#signalList.indexOf(signal) - 1);
 

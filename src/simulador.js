@@ -1,6 +1,3 @@
-const FIRST_HALF = 0;
-const SECOND_HALF = 1;
-
 // Criacao de array tipado em javascript, estao sendo alocados 128 bytes para corresponder os 32 registradores de 32 bits
 const registers = new Int32Array(new ArrayBuffer(128));
 
@@ -23,14 +20,18 @@ const mem_wb = new Int32Array(new ArrayBuffer(16)); // 4 posicoes
 const control = new Control();
 const alu = new ALU();
 
-// Auxiliadores para mostrar qual comando esta sendo executado em assembly
+// Auxiliadores para mostrar qual comando esta sendo executado em assembly e para guardar a instrucao em seu formato binario original
 const converter = new BinaryConverter();
 const execution_queue = ['-', '-', '-', '-', '-'];
 const binary_queue = ['', '', '', '', '']
-let lasWasJump = false;
+let lastWasJump = false;
 
 // String de saida
 let output = "";
+
+// Constantes para auxiliar as etapas de escrita e leitura dentro de 1 ciclo
+const FIRST_HALF = 0;
+const SECOND_HALF = 1;
 
 let cycleCount = 0;
 function cycle() {
@@ -55,32 +56,12 @@ function cycle() {
     updateUI();
 
     // Se o comando executado no estagio 4 for jump, apague da fila
-    if (lasWasJump) {
+    if (lastWasJump) {
         execution_queue[3] = '-';
         binary_queue[3] = 0;
     }
 }
 
-function writeInOutput(name, instruction, binary, controls, regName, reg) {
-    output += name + "\n";
-    output += "\t- Instrução: " + instruction + "\n";
-    output += "\t- Instrução em binario: " + toBin(binary) + "\n"
-
-    output += "\t- Sinais de controle:" + "\n";
-    for (let ctr in controls) {
-        output += "\t\t- " + ctr + ": " + controls[ctr] + "\n";
-    }
-
-    output += "\t- " + regName + ":\n"
-    if (reg.length > 0)
-        for (let n of reg) {
-            output += "\t\t- " + toBin(n) + "\n";
-        }
-
-    function toBin(x) {
-        return (x >>> 0).toString(2).padStart(32, '0');
-    }
-}
 
 function instructionFetch(half) { // Busca instrucao
     if (half === FIRST_HALF) { // primeira metada de ciclo apenas leitura
@@ -97,7 +78,10 @@ function instructionFetch(half) { // Busca instrucao
         if_id[0] = this.instruction;
         if_id[1] = this.pcIncremented;
 
+        // caso a proxima instrucao nao seja dada por pc + 4, o valor de pc vai ser sobrescrito em outro estagio
+        // e o comportamento se da do jeito esperado
         pc = this.pcIncremented;
+
         htmlWrite('pc', pc);
         writeInOutput("Instruction Fetch", execution_queue[0], binary_queue[0], null, "IF/ID", if_id);
     }
@@ -113,8 +97,10 @@ function instructionDecode(half) { // Decodifica instrucoes
         this.nextPc = if_id[1];
         this.jumpAddress = if_id[0] & 0b00000011111111111111111111111111; // [25-0]
 
+        // Gera os sinais de controle para a instrucao
         control.set(if_id[0]);
 
+        // Obtem os sinais concatenados
         this.controlConcat = control.getConcatedState();
 
         // extender o sinal: zero fill para a esquerda e depois  sigend shift para a direita
@@ -157,7 +143,8 @@ function execute(half) { // execucao ou calculo de endereco
             this.jAddress = mostSig + (id_ex[8] << 2);
         }
 
-        // Guarda os sinais de controle restantes para passar para etapa seguinte
+        // Para facilitar a implementacao, esse sinal de controle unificado e passado adiante entre os estagios do pipeline
+        // Apesar de nao ser muito fiel ao que acontece na pratica
         this.memoryControls = id_ex[0];
 
         // Calcula valor de pc desvio: valor de proximo pc + (campo offset deslocado 2 para esquerda)
@@ -253,7 +240,7 @@ function memoryRead(half) { // acesso a memoria
         // auxiliar para exibicao na interface com o usuaio
         // se a instrucao e jump que nao e jal, a execucao dela termina aqui
         // avisa a proxima funcao para remover o jum da fila
-        lasWasJump = (jump === 1 && link === 0) || branch || bne;
+        lastWasJump = (jump === 1 && link === 0) || branch || bne;
 
         // Salva sinais de controle em objeto para exibir no arquivo de saida
         this.memControls = { branch, bne, jump, link, memRead, memWrite };
@@ -306,9 +293,13 @@ document.getElementById('btn-next').addEventListener('click', cycle, false);
 document.getElementById('btn-reset').addEventListener('click', reset, false);
 document.getElementById('btn-download').addEventListener('click', dowloadFile, false)
 
+
 function loadFromTextArea() {
     // Pega conteudo do text area, separa por quebra de linha e guarda num array
     const text = document.getElementById("text-input").value.split('\n');
+
+    // limpa vetor
+    instruction_memory.length = 0;
 
     for (let instruction of text) {
         // Desconsidera instrucoes com tamanho invalido
@@ -323,6 +314,28 @@ function loadFromTextArea() {
     document.getElementById('btn-run').classList.remove('w3-disabled')
 }
 
+// Funcao para auxiliar a escrita do arquivo de saida
+function writeInOutput(name, instruction, binary, controls, regName, reg) {
+    output += name + "\n";
+    output += "\t- Instrução: " + instruction + "\n";
+    output += "\t- Instrução em binario: " + toBin(binary) + "\n"
+
+    output += "\t- Sinais de controle:" + "\n";
+    for (let ctr in controls) {
+        output += "\t\t- " + ctr + ": " + controls[ctr] + "\n";
+    }
+
+    output += "\t- " + regName + ":\n"
+    if (reg.length > 0)
+        for (let n of reg) {
+            output += "\t\t- " + toBin(n) + "\n";
+        }
+
+    function toBin(x) {
+        return (x >>> 0).toString(2).padStart(32, '0');
+    }
+}
+
 const delay = 900; // delay ao executar uma instrucao e outra
 let timeOut; // guarda a referecia do timeou para poder cancela-lo
 function run() {
@@ -332,14 +345,15 @@ function run() {
     let isComand = false;
 
     while (isComand == false && i < 5) {
-        i++;
         isComand = execution_queue[i] != '-';
+        i++;
     }
 
     if (isComand) {
         timeOut = setTimeout(run, delay);
     }
     else {
+        console.log('cabou')
         clearTimeout(timeOut);
     }
 }
@@ -360,16 +374,16 @@ function reset() {
 
 
     updateUI();
+}
 
-    function resetArray(array, value = 0) {
-        for (let i = 0; i < array.length; i++) {
-            array[i] = value;
-        }
+function resetArray(array, value = 0) {
+    for (let i = 0; i < array.length; i++) {
+        array[i] = value;
     }
 }
 
 function dowloadFile(e) {
-    let blob = new Blob([output], {type: 'text/plain'});
+    let blob = new Blob([output], { type: 'text/plain' });
     e.target.download = "log-simulador.txt";
     e.target.href = window.URL.createObjectURL(blob);
 }
