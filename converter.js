@@ -115,21 +115,21 @@ class BinaryConverter {
             case 15:
                 return '$t7';
             case 16:
-                return '$r0';
+                return '$s0';
             case 17:
-                return '$r1';
+                return '$s1';
             case 18:
-                return '$r2';
+                return '$s2';
             case 19:
-                return '$r3';
+                return '$s3';
             case 20:
-                return '$r4';
+                return '$s4';
             case 21:
-                return '$r5';
+                return '$s5';
             case 22:
-                return '$r6';
+                return '$s6';
             case 23:
-                return '$r7';
+                return '$s7';
             case 24:
                 return '$t8';
             case 25:
