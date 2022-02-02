@@ -407,7 +407,7 @@ function updateUI() {
     htmlWrite('t9', registers[25]);
 
     for (let i = 0; i < 8; i++) {
-        htmlWrite('s' + i, registers[15 + i]);
+        htmlWrite('s' + i, registers[16 + i]);
     }
 
     htmlWrite('gp', registers[28]);
